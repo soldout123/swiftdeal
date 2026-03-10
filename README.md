@@ -1,4 +1,4 @@
-# SwiftDeal Jamaica 🚕
+# SwiftDeal-IOS 🚕
 
 SwiftDeal is a real-time ride-sharing web application designed for the Jamaican market. It allows passengers to set their own pickup and destination locations, negotiate fares dynamically, and track drivers in real-time.
 
