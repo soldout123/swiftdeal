@@ -2,6 +2,8 @@ workflows:
   ios-workflow:
     name: SwiftDeal iOS Build
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Codemagic
     environment:
       xcode: latest
       cocoapods: default
@@ -10,9 +12,13 @@ workflows:
         script: |
           cd "SwiftDeal IOS/src"
           pod install
-      - name: Build the iOS App
+      - name: Build and Sign the iOS App
         script: |
           cd "SwiftDeal IOS/src"
-          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal"
+          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal" --export-method app-store
     artifacts:
       - "**/*.ipa"
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
