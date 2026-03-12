@@ -1,0 +1,18 @@
+workflows:
+  ios-workflow:
+    name: SwiftDeal iOS Build
+    instance_type: mac_mini_m1
+    environment:
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install Dependencies
+        script: |
+          cd "SwiftDeal IOS/src"
+          pod install
+      - name: Build the iOS App
+        script: |
+          cd "SwiftDeal IOS/src"
+          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal"
+    artifacts:
+      - "**/*.ipa"
