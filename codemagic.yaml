@@ -15,7 +15,7 @@ workflows:
       - name: Build and Sign the iOS App
         script: |
           cd "SwiftDeal IOS/src"
-          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal" --export-method app-store
+          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal"
     artifacts:
       - "**/*.ipa"
     publishing:
