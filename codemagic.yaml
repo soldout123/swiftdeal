@@ -2,6 +2,8 @@ workflows:
   ios-workflow:
     name: SwiftDeal iOS Build
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Codemagic
     environment:
       xcode: latest
       cocoapods: default
@@ -25,6 +27,5 @@ workflows:
       - "**/*.ipa"
     publishing:
       app_store_connect:
-        auth:
-          integration: "D3MK755C56"
+        auth: integration
         submit_to_testflight: true
