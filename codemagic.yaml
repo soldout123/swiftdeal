@@ -26,5 +26,5 @@ workflows:
     publishing:
       app_store_connect:
         auth:
-          integration: "Codemagic"
+          integration: "D3MK755C56"
         submit_to_testflight: true
