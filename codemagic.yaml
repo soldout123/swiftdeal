@@ -26,5 +26,5 @@ workflows:
     publishing:
       app_store_connect:
         auth:
-          integration: "Codemagic Key"
+          integration: "Codemagic"
         submit_to_testflight: true
