@@ -16,7 +16,13 @@ workflows:
         script: |
           cd "SwiftDeal IOS/src"
           keychain initialize
-          app-store-connect fetch-signing-files "$(xcode-project detect-bundle-id)" --type IOS_APP_STORE --create
+          
+          # 1. Force delete any hidden, old profiles on the virtual Mac
+          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
+          
+          # 2. Hardcode the Bundle ID so it cannot possibly pull the wrong one
+          app-store-connect fetch-signing-files "com.swiftdeal.app" --type IOS_APP_STORE --create
+          
           keychain add-certificates
           xcode-project use-profiles
       - name: Build the iOS App
