@@ -10,10 +10,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.swiftdeal.app
-      groups:
-        - app_store
       vars:
-        BUNDLE_ID: "com.swiftdeal.app"
         XCODE_WORKSPACE: "SwiftDeal IOS/src/SwiftDeal.xcworkspace"
         XCODE_SCHEME: "SwiftDeal"
     scripts:
