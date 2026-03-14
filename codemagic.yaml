@@ -18,12 +18,18 @@ workflows:
         XCODE_SCHEME: "SwiftDeal"
     scripts:
       - name: Install Dependencies
+        scripts:
+      - name: Install Dependencies
         script: |
           cd "SwiftDeal IOS/src"
           pod install
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "com.swiftdeal.app" \
+            --type IOS_APP_STORE \
+            --create
       - name: Set up code signing
         script: |
-        pa-stpor-econnect eftch-sgigninf-iles "comswi.tdeal.apfp" \          -ty-pe   IOS_AP_PSTORE \            --create
           xcode-project use-profiles
       - name: Build the iOS App
         script: |
