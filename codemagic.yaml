@@ -23,6 +23,7 @@ workflows:
           pod install
       - name: Set up code signing
         script: |
+        pa-stpor-econnect eftch-sgigninf-iles "comswi.tdeal.apfp" \          -ty-pe   IOS_AP_PSTORE \            --create
           xcode-project use-profiles
       - name: Build the iOS App
         script: |
