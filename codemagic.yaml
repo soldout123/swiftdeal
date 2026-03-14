@@ -7,30 +7,31 @@ workflows:
     environment:
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.swiftdeal.app
+      groups:
+        - app_store
+      vars:
+        BUNDLE_ID: "com.swiftdeal.app"
+        XCODE_WORKSPACE: "SwiftDeal IOS/src/SwiftDeal.xcworkspace"
+        XCODE_SCHEME: "SwiftDeal"
     scripts:
       - name: Install Dependencies
         script: |
           cd "SwiftDeal IOS/src"
           pod install
-      - name: Download Apple Certificates
+      - name: Set up code signing
         script: |
-          cd "SwiftDeal IOS/src"
-          keychain initialize
-          
-          # 1. Force delete any hidden, old profiles on the virtual Mac
-          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
-          
-          # 2. Hardcode the Bundle ID so it cannot possibly pull the wrong one
-          app-store-connect fetch-signing-files "com.swiftdeal.app" --type IOS_APP_STORE --create
-          
-          keychain add-certificates
           xcode-project use-profiles
       - name: Build the iOS App
         script: |
           cd "SwiftDeal IOS/src"
-          xcode-project build-ipa --workspace "SwiftDeal.xcworkspace" --scheme "SwiftDeal"
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
-      - "**/*.ipa"
+      - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         auth: integration
