@@ -18,8 +18,6 @@ workflows:
         XCODE_SCHEME: "SwiftDeal"
     scripts:
       - name: Install Dependencies
-        scripts:
-      - name: Install Dependencies
         script: |
           cd "SwiftDeal IOS/src"
           pod install
