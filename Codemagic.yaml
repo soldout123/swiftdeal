@@ -10,9 +10,6 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.swiftdeal.app
-      vars:
-        XCODE_WORKSPACE: "SwiftDeal IOS/src/SwiftDeal.xcworkspace"
-        XCODE_SCHEME: "SwiftDeal"
     scripts:
       - name: Install Dependencies
         script: |
@@ -20,18 +17,14 @@ workflows:
           pod install
       - name: Fetch signing files
         script: |
-          app-store-connect fetch-signing-files "com.swiftdeal.app" \
-            --type IOS_APP_STORE \
-            --create
+          app-store-connect fetch-signing-files "com.swiftdeal.app" --type IOS_APP_STORE --create
       - name: Set up code signing
         script: |
           xcode-project use-profiles
       - name: Build the iOS App
         script: |
           cd "SwiftDeal IOS/src"
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          xcode-project build-ipa --workspace "SwiftDeal IOS/src/SwiftDeal.xcworkspace" --scheme "SwiftDeal"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
