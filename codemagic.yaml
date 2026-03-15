@@ -5,9 +5,10 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
-    groups: signing
       xcode: latest
       cocoapods: default
+      groups:
+        - signing
     scripts:
       - name: Setup and Build
         script: |
@@ -19,7 +20,6 @@ workflows:
           xcode-project build-ipa --workspace "SwiftDeal IOS/src/SwiftDeal.xcworkspace" --scheme "SwiftDeal"
     artifacts:
       - build/ios/ipa/*.ipa
-      - "**/*.ipa"
     publishing:
       app_store_connect:
         auth: integration
