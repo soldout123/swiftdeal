@@ -10,12 +10,27 @@ workflows:
     scripts:
       - name: Setup and Build
         script: |
-          app-store-connect fetch-signing-files "com.swiftdeal.app" --type IOS_APP_STORE --create
+          # Generate a fresh private key for Apple certificate
+          openssl genrsa -out /tmp/cert_key.pem 2048
+          export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
+          
+          # Create certificate and provisioning profile on Apple
+          app-store-connect fetch-signing-files "com.swiftdeal.app" \
+            --type IOS_APP_STORE \
+            --create
+          
+          # Apply signing to Xcode project
           xcode-project use-profiles
+          
+          # Install CocoaPods
           cd "SwiftDeal IOS/src"
           pod install
           cd ../..
-          xcode-project build-ipa --workspace "SwiftDeal IOS/src/SwiftDeal.xcworkspace" --scheme "SwiftDeal"
+          
+          # Build the IPA
+          xcode-project build-ipa \
+            --workspace "SwiftDeal IOS/src/SwiftDeal.xcworkspace" \
+            --scheme "SwiftDeal"
     artifacts:
       - build/ios/ipa/*.ipa
       - "**/*.ipa"
@@ -23,3 +38,15 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+```
+
+Commit it.
+
+---
+
+## What This Fixes
+
+The key addition is these two lines:
+```
+openssl genrsa -out /tmp/cert_key.pem 2048
+export CERTIFICATE_PRIVATE_KEY="$(cat /tmp/cert_key.pem)"
