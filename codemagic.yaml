@@ -5,7 +5,7 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
-    groups: - signing
+    groups: signing
       xcode: latest
       cocoapods: default
     scripts:
