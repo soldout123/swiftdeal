@@ -7,26 +7,18 @@ workflows:
     environment:
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.swiftdeal.app
     scripts:
-      - name: Install Dependencies
-        script: |
-          cd "SwiftDeal IOS/src"
-          pod install
-      - name: Fetch signing files
+      - name: Setup and Build
         script: |
           app-store-connect fetch-signing-files "com.swiftdeal.app" --type IOS_APP_STORE --create
-      - name: Set up code signing
-        script: |
           xcode-project use-profiles
-      - name: Build the iOS App
-        script: |
           cd "SwiftDeal IOS/src"
+          pod install
+          cd ../..
           xcode-project build-ipa --workspace "SwiftDeal IOS/src/SwiftDeal.xcworkspace" --scheme "SwiftDeal"
     artifacts:
       - build/ios/ipa/*.ipa
+      - "**/*.ipa"
     publishing:
       app_store_connect:
         auth: integration
