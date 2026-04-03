@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,19 +25,15 @@ jobs:
       - name: Accept Android SDK Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
+      - name: Install Bubblewrap and Expect
+        run: |
+          npm install -g @bubblewrap/cli
+          sudo apt-get install -y expect
 
-      - name: Configure Bubblewrap to use installed JDK and SDK
+      - name: Configure Bubblewrap
         run: |
           mkdir -p ~/.bubblewrap
-          cat > ~/.bubblewrap/config.json << EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
-          }
-          EOF
-          echo "Bubblewrap config:"
+          echo '{"jdkPath":"'"$JAVA_HOME"'","androidSdkPath":"'"$ANDROID_HOME"'"}' > ~/.bubblewrap/config.json
           cat ~/.bubblewrap/config.json
 
       - name: Decode Keystore
@@ -44,19 +41,80 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $HOME/signing.keystore
           ls -la $HOME/signing.keystore
 
-      - name: Initialize Bubblewrap Project
+      - name: Initialize Bubblewrap Project with Expect
         run: |
           mkdir -p $HOME/twa-build && cd $HOME/twa-build
-          yes "" | bubblewrap init --manifest="https://swiftdeal-3cee9.web.app/manifest.json" 2>&1 || true
-          echo "=== Files generated ==="
-          ls -la
 
-      - name: Fix TWA Manifest Settings
+          export KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
+          export KS_PASS="${{ secrets.KEYSTORE_PASSWORD }}"
+
+          expect << 'EXPECT_EOF'
+          set timeout 180
+          spawn bubblewrap init --manifest=https://swiftdeal-3cee9.web.app/manifest.json
+
+          # Loop through all prompts
+          expect {
+              # JDK/SDK install prompts - say No (we pre-installed)
+              "install the JDK" { send "No\r"; exp_continue }
+              "install the Android" { send "No\r"; exp_continue }
+
+              # App config - accept defaults except package ID and version
+              "Application ID" { send "com.swiftdeal.app\r"; exp_continue }
+              "version name" { send "9.0.0.0\r"; exp_continue }
+              "version code" { send "9\r"; exp_continue }
+
+              # Location delegation - YES (fixes map!)
+              -re "(?i)location" { send "y\r"; exp_continue }
+
+              # Play Billing - No
+              -re "(?i)billing" { send "n\r"; exp_continue }
+
+              # Signing key prompts
+              -re "(?i)existing.*signing" { send "y\r"; exp_continue }
+              -re "(?i)key store location|keystore.*path|path.*key" {
+                  send "$env(HOME)/signing.keystore\r"
+                  exp_continue
+              }
+              -re "(?i)key.*alias|alias.*name" {
+                  send "$env(KEY_ALIAS)\r"
+                  exp_continue
+              }
+              -re "(?i)create.*signing|generate.*key|new.*key" { send "n\r"; exp_continue }
+
+              # Password prompts
+              -re "(?i)store.*password|keystore.*password" {
+                  send "$env(KS_PASS)\r"
+                  exp_continue
+              }
+              -re "(?i)key.*password" {
+                  send "$env(KS_PASS)\r"
+                  exp_continue
+              }
+
+              # Any other prompt - accept default
+              "?" { send "\r"; exp_continue }
+              ">" { send "\r"; exp_continue }
+
+              # Done
+              eof { puts "Bubblewrap init completed" }
+              timeout { puts "Timed out - continuing anyway" }
+          }
+          EXPECT_EOF
+
+          echo "=== Init complete. Files: ==="
+          ls -la $HOME/twa-build/
+
+      - name: Verify and Fix TWA Manifest
         run: |
           cd $HOME/twa-build
+          if [ ! -f twa-manifest.json ]; then
+            echo "ERROR: twa-manifest.json not created"
+            exit 1
+          fi
+
           sudo apt-get install -y jq > /dev/null 2>&1
-          TEMP_FILE=$(mktemp)
-          jq --arg home "$HOME" --arg alias "$KEY_ALIAS" '
+          TEMP=$(mktemp)
+          jq --arg home "$HOME" --arg alias "${{ secrets.KEY_ALIAS }}" '
             .packageId = "com.swiftdeal.app" |
             .display = "standalone" |
             .orientation = "portrait" |
@@ -69,21 +127,18 @@ jobs:
             .themeColor = "#f9d71c" |
             .navigationColor = "#000000" |
             .backgroundColor = "#000000"
-          ' twa-manifest.json > "$TEMP_FILE" && mv "$TEMP_FILE" twa-manifest.json
-          echo "=== Updated twa-manifest.json ==="
-          cat twa-manifest.json
-        env:
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ' twa-manifest.json > "$TEMP" && mv "$TEMP" twa-manifest.json
 
-      - name: Regenerate Project with Updated Settings
+          echo "=== Final twa-manifest.json ==="
+          cat twa-manifest.json
+
+      - name: Update and Build
         run: |
           cd $HOME/twa-build
           yes "" | bubblewrap update --skipVersionUpgrade 2>&1 || true
-
-      - name: Build AAB
-        run: |
-          cd $HOME/twa-build
-          bubblewrap build --skipPwaValidation --signingKeyPath="$HOME/signing.keystore" --signingKeyAlias="${{ secrets.KEY_ALIAS }}"
+          bubblewrap build --skipPwaValidation \
+            --signingKeyPath="$HOME/signing.keystore" \
+            --signingKeyAlias="${{ secrets.KEY_ALIAS }}"
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -93,10 +148,11 @@ jobs:
           AAB=$(find $HOME/twa-build -name "*.aab" -type f 2>/dev/null | head -1)
           if [ -n "$AAB" ]; then
             cp "$AAB" $GITHUB_WORKSPACE/SwiftDeal-v9.aab
-            echo "AAB ready: $(ls -lh $GITHUB_WORKSPACE/SwiftDeal-v9.aab)"
+            echo "SUCCESS: $(ls -lh $GITHUB_WORKSPACE/SwiftDeal-v9.aab)"
           else
-            echo "No AAB found. Directory contents:"
-            ls -laR $HOME/twa-build/ | head -80
+            echo "=== No AAB found. Checking for errors ==="
+            find $HOME/twa-build -type f -name "*.aab" -o -name "*.apk" 2>/dev/null
+            ls -laR $HOME/twa-build/ | tail -30
             exit 1
           fi
 
