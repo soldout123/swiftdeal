@@ -25,17 +25,25 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $HOME/signing.keystore
           ls -la $HOME/signing.keystore
 
+      - name: Install Gradle
+        run: |
+          curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
+          export PATH="/opt/gradle-8.5/bin:$PATH"
+          gradle --version
+
       - name: Create TWA Project
         run: |
-          mkdir -p $HOME/twa/app/src/main/res/values
-          mkdir -p $HOME/twa/app/src/main/res/mipmap-xxxhdpi
-          mkdir -p $HOME/twa/app/src/main/res/xml
-          mkdir -p $HOME/twa/gradle/wrapper
+          PRJ=$HOME/twa
+          mkdir -p $PRJ/app/src/main/res/values
+          mkdir -p $PRJ/app/src/main/res/mipmap-xxxhdpi
 
-          # Download icon
-          curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" \
+            -o $PRJ/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-          # Root build.gradle
+      - name: Write Root build.gradle
+        run: |
           cat > $HOME/twa/build.gradle << 'EOF'
           buildscript {
               repositories {
@@ -54,28 +62,22 @@ jobs:
           }
           EOF
 
-          # settings.gradle
-          cat > $HOME/twa/settings.gradle << 'EOF'
-          include ':app'
-          EOF
+      - name: Write settings.gradle
+        run: echo "include ':app'" > $HOME/twa/settings.gradle
 
-          # gradle.properties
+      - name: Write gradle.properties
+        run: |
           cat > $HOME/twa/gradle.properties << 'EOF'
           android.useAndroidX=true
           org.gradle.jvmargs=-Xmx2048m
           EOF
 
-          # Gradle wrapper properties
-          cat > $HOME/twa/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip
-          EOF
-
-          # App build.gradle
-          cat > $HOME/twa/app/build.gradle << 'APPGRADLE'
+      - name: Write App build.gradle
+        run: |
+          cat > $HOME/twa/app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
           }
-
           android {
               namespace "com.swiftdeal.app"
               compileSdk 34
@@ -88,10 +90,10 @@ jobs:
               }
               signingConfigs {
                   release {
-                      storeFile file(System.getenv("KEYSTORE_PATH") ?: "${System.getProperty('user.home')}/signing.keystore")
-                      storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
-                      keyAlias System.getenv("KEY_ALIAS") ?: ""
-                      keyPassword System.getenv("KEY_PASSWORD") ?: ""
+                      storeFile file(System.getenv("KEYSTORE_PATH"))
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("KEY_ALIAS")
+                      keyPassword System.getenv("KEY_PASSWORD")
                   }
               }
               buildTypes {
@@ -105,87 +107,63 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_1_8
               }
           }
-
           dependencies {
               implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
           }
-          APPGRADLE
+          EOF
 
-          # AndroidManifest.xml
-          cat > $HOME/twa/app/src/main/AndroidManifest.xml << 'MANIFEST'
+      - name: Write AndroidManifest.xml
+        run: |
+          cat > $HOME/twa/app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
+              <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
               <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-              <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
               <application
-                  android:name="android.app.Application"
                   android:allowBackup="true"
                   android:icon="@mipmap/ic_launcher"
                   android:label="@string/app_name"
                   android:theme="@style/AppTheme"
                   android:supportsRtl="true">
-
                   <meta-data
                       android:name="asset_statements"
-                      android:resource="@string/asset_statements" />
-
+                      android:resource="@string/asset_statements"/>
                   <activity
                       android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
                       android:exported="true"
                       android:screenOrientation="portrait">
-                      <tools:replace="android:screenOrientation"/>
-
                       <meta-data
                           android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                          android:value="https://swiftdeal-3cee9.web.app" />
-
+                          android:value="https://swiftdeal-3cee9.web.app"/>
                       <meta-data
                           android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
-                          android:value="#000000" />
-
+                          android:value="#FF000000"/>
                       <meta-data
                           android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
-                          android:value="#000000" />
-
+                          android:value="#FF000000"/>
                       <meta-data
                           android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
-                          android:resource="@mipmap/ic_launcher" />
-
+                          android:resource="@mipmap/ic_launcher"/>
                       <meta-data
                           android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
-                          android:value="#000000" />
-
-                      <meta-data
-                          android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION"
-                          android:value="portrait" />
-
+                          android:value="#FF000000"/>
                       <meta-data
                           android:name="android.support.customtabs.trusted.DISPLAY_MODE"
-                          android:value="standalone" />
-
-                      <meta-data
-                          android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
-                          android:value="@string/fallback_type" />
-
+                          android:value="standalone"/>
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
-
                       <intent-filter android:autoVerify="true">
                           <action android:name="android.intent.action.VIEW"/>
-                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.DEFAULT"/>
                           <category android:name="android.intent.category.BROWSABLE"/>
                           <data android:scheme="https" android:host="swiftdeal-3cee9.web.app"/>
                       </intent-filter>
                   </activity>
-
                   <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"/>
-
                   <service
                       android:name="com.google.androidbrowserhelper.trusted.DelegationService"
                       android:enabled="true"
@@ -195,62 +173,35 @@ jobs:
                           <category android:name="android.intent.category.DEFAULT"/>
                       </intent-filter>
                   </service>
-
-                  <activity
-                      android:name="com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity"
-                      android:enabled="true"/>
-
-                  <provider
-                      android:name="com.google.androidbrowserhelper.trusted.sharing.ExtraCommandProxyProvider"
-                      android:authorities="com.swiftdeal.app.extracommands"
-                      android:exported="true"
-                      android:grantUriPermissions="true">
-                  </provider>
-
-                  <!-- Location Delegation -->
-                  <service
-                      android:name="com.google.androidbrowserhelper.locationdelegation.LocationDelegationExtraCommandHandler"
-                      android:enabled="true"
-                      android:exported="true">
-                  </service>
-
               </application>
-
               <queries>
                   <intent>
-                      <action android:name="android.support.customtabs.action.CustomTabsService" />
+                      <action android:name="android.support.customtabs.action.CustomTabsService"/>
                   </intent>
               </queries>
-
           </manifest>
-          MANIFEST
+          EOF
 
-          # Fix: add tools namespace to manifest
-          sed -i 's|<manifest xmlns:android|<manifest xmlns:tools="http://schemas.android.com/tools" xmlns:android|' $HOME/twa/app/src/main/AndroidManifest.xml
-
-          # strings.xml
-          cat > $HOME/twa/app/src/main/res/values/strings.xml << 'STRINGS'
+      - name: Write Resource Files
+        run: |
+          cat > $HOME/twa/app/src/main/res/values/strings.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <string name="app_name">SwiftDeal</string>
               <string name="asset_statements">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://swiftdeal-3cee9.web.app\"}}]</string>
-              <string name="fallback_type">customtabs</string>
           </resources>
-          STRINGS
+          EOF
 
-          # colors.xml
-          cat > $HOME/twa/app/src/main/res/values/colors.xml << 'COLORS'
+          cat > $HOME/twa/app/src/main/res/values/colors.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <color name="colorPrimary">#f9d71c</color>
-              <color name="colorPrimaryDark">#000000</color>
-              <color name="navigationColor">#000000</color>
-              <color name="backgroundColor">#000000</color>
+              <color name="colorPrimary">#FFF9D71C</color>
+              <color name="colorPrimaryDark">#FF000000</color>
+              <color name="backgroundColor">#FF000000</color>
           </resources>
-          COLORS
+          EOF
 
-          # styles.xml
-          cat > $HOME/twa/app/src/main/res/values/styles.xml << 'STYLES'
+          cat > $HOME/twa/app/src/main/res/values/styles.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
@@ -259,52 +210,35 @@ jobs:
                   <item name="android:windowBackground">@color/backgroundColor</item>
               </style>
           </resources>
-          STYLES
+          EOF
 
-          # Gradle wrapper script
-          curl -sL "https://raw.githubusercontent.com/nicktorwald/gradle-wrapper/refs/heads/master/gradlew" -o $HOME/twa/gradlew || {
-            cat > $HOME/twa/gradlew << 'GRADLEW'
-          #!/bin/sh
-          APP_HOME=$(cd "$(dirname "$0")" && pwd)
-          CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-          exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-          GRADLEW
-          }
-          chmod +x $HOME/twa/gradlew
-
-          # Download gradle wrapper jar
-          curl -sL "https://github.com/nicktorwald/gradle-wrapper/raw/refs/heads/master/gradle/wrapper/gradle-wrapper.jar" -o $HOME/twa/gradle/wrapper/gradle-wrapper.jar || \
-          curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip && \
-          unzip -q /tmp/gradle.zip -d /tmp && \
-          cp /tmp/gradle-8.5/lib/gradle-wrapper-*.jar $HOME/twa/gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
-
-          echo "=== Project structure ==="
-          find $HOME/twa -type f | head -30
-
-      - name: Install Gradle
+      - name: Validate XML
         run: |
-          cd $HOME/twa
-          # Use SDK's built-in gradle or install it
-          if ! command -v gradle &>/dev/null; then
-            curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
-            unzip -q /tmp/gradle.zip -d /opt
-            export PATH="/opt/gradle-8.5/bin:$PATH"
-            echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
-          fi
-          gradle --version
+          echo "=== AndroidManifest.xml ==="
+          cat $HOME/twa/app/src/main/AndroidManifest.xml
+          echo ""
+          echo "=== Validating XML ==="
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          ET.parse('$HOME/twa/app/src/main/AndroidManifest.xml')
+          print('AndroidManifest.xml: VALID')
+          ET.parse('$HOME/twa/app/src/main/res/values/strings.xml')
+          print('strings.xml: VALID')
+          ET.parse('$HOME/twa/app/src/main/res/values/colors.xml')
+          print('colors.xml: VALID')
+          ET.parse('$HOME/twa/app/src/main/res/values/styles.xml')
+          print('styles.xml: VALID')
+          "
 
       - name: Build AAB
         run: |
           cd $HOME/twa
-          export KEYSTORE_PATH="$HOME/signing.keystore"
-          export KEYSTORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}"
-          export KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
-          export KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
-
-          gradle bundleRelease --no-daemon --stacktrace
-
-          echo "=== Looking for AAB ==="
-          find . -name "*.aab" -type f
+          gradle bundleRelease --no-daemon
+        env:
+          KEYSTORE_PATH: /home/runner/signing.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Collect AAB
         run: |
@@ -314,8 +248,6 @@ jobs:
             echo "SUCCESS: $(ls -lh $GITHUB_WORKSPACE/SwiftDeal-v9.aab)"
           else
             echo "ERROR: No AAB found"
-            find $HOME/twa -name "*.apk" -o -name "*.aab" 2>/dev/null
-            cat $HOME/twa/app/build/outputs/logs/*.log 2>/dev/null || true
             exit 1
           fi
 
