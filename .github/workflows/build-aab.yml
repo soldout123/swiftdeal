@@ -25,6 +25,14 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $HOME/signing.keystore
           ls -la $HOME/signing.keystore
 
+      - name: Test Keystore
+        run: |
+          echo "Testing keystore..."
+          keytool -list -keystore $HOME/signing.keystore -storepass "$KEYSTORE_PASSWORD" -storetype PKCS12
+          echo "Keystore test PASSED"
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
       - name: Install Gradle
         run: |
           curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
@@ -34,33 +42,31 @@ jobs:
       - name: Create Entire TWA Project
         shell: python3 {0}
         run: |
-          import os, json
+          import os
 
           home = os.environ['HOME']
           prj = f"{home}/twa"
 
-          # Create directories
           for d in ['app/src/main/res/values', 'app/src/main/res/mipmap-xxxhdpi', 'gradle/wrapper']:
               os.makedirs(f"{prj}/{d}", exist_ok=True)
 
           # Root build.gradle
           with open(f"{prj}/build.gradle", 'w') as f:
-              f.write("""buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.2'
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          """)
+              f.write("buildscript {\n")
+              f.write("    repositories {\n")
+              f.write("        google()\n")
+              f.write("        mavenCentral()\n")
+              f.write("    }\n")
+              f.write("    dependencies {\n")
+              f.write("        classpath 'com.android.tools.build:gradle:8.2.2'\n")
+              f.write("    }\n")
+              f.write("}\n")
+              f.write("allprojects {\n")
+              f.write("    repositories {\n")
+              f.write("        google()\n")
+              f.write("        mavenCentral()\n")
+              f.write("    }\n")
+              f.write("}\n")
 
           # settings.gradle
           with open(f"{prj}/settings.gradle", 'w') as f:
@@ -68,160 +74,142 @@ jobs:
 
           # gradle.properties
           with open(f"{prj}/gradle.properties", 'w') as f:
-              f.write("android.useAndroidX=true\norg.gradle.jvmargs=-Xmx2048m\n")
+              f.write("android.useAndroidX=true\n")
+              f.write("org.gradle.jvmargs=-Xmx2048m\n")
 
-          # App build.gradle
-          ks_path = f"{home}/signing.keystore"
+          # App build.gradle with PKCS12 storeType
+          ks = f"{home}/signing.keystore"
           with open(f"{prj}/app/build.gradle", 'w') as f:
-              f.write(f"""plugins {{
-              id 'com.android.application'
-          }}
-          android {{
-              namespace "com.swiftdeal.app"
-              compileSdk 34
-              defaultConfig {{
-                  applicationId "com.swiftdeal.app"
-                  minSdk 19
-                  targetSdk 34
-                  versionCode 9
-                  versionName "9.0.0.0"
-              }}
-              signingConfigs {{
-                  release {{
-                      storeFile file("{ks_path}")
-                      storePassword System.getenv("KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("KEY_ALIAS")
-                      keyPassword System.getenv("KEY_PASSWORD")
-                  }}
-              }}
-              buildTypes {{
-                  release {{
-                      signingConfig signingConfigs.release
-                      minifyEnabled false
-                  }}
-              }}
-              compileOptions {{
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }}
-          }}
-          dependencies {{
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
-          }}
-          """)
+              f.write("plugins {\n")
+              f.write("    id 'com.android.application'\n")
+              f.write("}\n")
+              f.write("android {\n")
+              f.write('    namespace "com.swiftdeal.app"\n')
+              f.write("    compileSdk 34\n")
+              f.write("    defaultConfig {\n")
+              f.write('        applicationId "com.swiftdeal.app"\n')
+              f.write("        minSdk 19\n")
+              f.write("        targetSdk 34\n")
+              f.write("        versionCode 9\n")
+              f.write('        versionName "9.0.0.0"\n')
+              f.write("    }\n")
+              f.write("    signingConfigs {\n")
+              f.write("        release {\n")
+              f.write(f'            storeFile file("{ks}")\n')
+              f.write('            storePassword System.getenv("KEYSTORE_PASSWORD")\n')
+              f.write('            keyAlias System.getenv("KEY_ALIAS")\n')
+              f.write('            keyPassword System.getenv("KEY_PASSWORD")\n')
+              f.write('            storeType "PKCS12"\n')
+              f.write("        }\n")
+              f.write("    }\n")
+              f.write("    buildTypes {\n")
+              f.write("        release {\n")
+              f.write("            signingConfig signingConfigs.release\n")
+              f.write("            minifyEnabled false\n")
+              f.write("        }\n")
+              f.write("    }\n")
+              f.write("    compileOptions {\n")
+              f.write("        sourceCompatibility JavaVersion.VERSION_1_8\n")
+              f.write("        targetCompatibility JavaVersion.VERSION_1_8\n")
+              f.write("    }\n")
+              f.write("}\n")
+              f.write("dependencies {\n")
+              f.write("    implementation 'androidx.appcompat:appcompat:1.6.1'\n")
+              f.write("    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'\n")
+              f.write("}\n")
 
           # AndroidManifest.xml
           with open(f"{prj}/app/src/main/AndroidManifest.xml", 'w') as f:
-              f.write("""<?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-              <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
-                  android:label="@string/app_name"
-                  android:theme="@style/AppTheme"
-                  android:supportsRtl="true">
-                  <meta-data android:name="asset_statements" android:resource="@string/asset_statements"/>
-                  <activity
-                      android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
-                      android:exported="true"
-                      android:screenOrientation="portrait">
-                      <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL"
-                          android:value="https://swiftdeal-3cee9.web.app"/>
-                      <meta-data android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
-                          android:value="#FF000000"/>
-                      <meta-data android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
-                          android:value="#FF000000"/>
-                      <meta-data android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
-                          android:resource="@mipmap/ic_launcher"/>
-                      <meta-data android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
-                          android:value="#FF000000"/>
-                      <meta-data android:name="android.support.customtabs.trusted.DISPLAY_MODE"
-                          android:value="standalone"/>
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                      <intent-filter android:autoVerify="true">
-                          <action android:name="android.intent.action.VIEW"/>
-                          <category android:name="android.intent.category.DEFAULT"/>
-                          <category android:name="android.intent.category.BROWSABLE"/>
-                          <data android:scheme="https" android:host="swiftdeal-3cee9.web.app"/>
-                      </intent-filter>
-                  </activity>
-                  <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"/>
-                  <service
-                      android:name="com.google.androidbrowserhelper.trusted.DelegationService"
-                      android:enabled="true"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE"/>
-                          <category android:name="android.intent.category.DEFAULT"/>
-                      </intent-filter>
-                  </service>
-              </application>
-              <queries>
-                  <intent>
-                      <action android:name="android.support.customtabs.action.CustomTabsService"/>
-                  </intent>
-              </queries>
-          </manifest>
-          """)
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+              f.write('<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n')
+              f.write('    <uses-permission android:name="android.permission.INTERNET"/>\n')
+              f.write('    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n')
+              f.write('    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n')
+              f.write('    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n')
+              f.write('    <application\n')
+              f.write('        android:allowBackup="true"\n')
+              f.write('        android:icon="@mipmap/ic_launcher"\n')
+              f.write('        android:label="@string/app_name"\n')
+              f.write('        android:theme="@style/AppTheme"\n')
+              f.write('        android:supportsRtl="true">\n')
+              f.write('        <meta-data android:name="asset_statements" android:resource="@string/asset_statements"/>\n')
+              f.write('        <activity\n')
+              f.write('            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"\n')
+              f.write('            android:exported="true"\n')
+              f.write('            android:screenOrientation="portrait">\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL"\n')
+              f.write('                android:value="https://swiftdeal-3cee9.web.app"/>\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"\n')
+              f.write('                android:value="#FF000000"/>\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"\n')
+              f.write('                android:value="#FF000000"/>\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"\n')
+              f.write('                android:resource="@mipmap/ic_launcher"/>\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"\n')
+              f.write('                android:value="#FF000000"/>\n')
+              f.write('            <meta-data android:name="android.support.customtabs.trusted.DISPLAY_MODE"\n')
+              f.write('                android:value="standalone"/>\n')
+              f.write('            <intent-filter>\n')
+              f.write('                <action android:name="android.intent.action.MAIN"/>\n')
+              f.write('                <category android:name="android.intent.category.LAUNCHER"/>\n')
+              f.write('            </intent-filter>\n')
+              f.write('            <intent-filter android:autoVerify="true">\n')
+              f.write('                <action android:name="android.intent.action.VIEW"/>\n')
+              f.write('                <category android:name="android.intent.category.DEFAULT"/>\n')
+              f.write('                <category android:name="android.intent.category.BROWSABLE"/>\n')
+              f.write('                <data android:scheme="https" android:host="swiftdeal-3cee9.web.app"/>\n')
+              f.write('            </intent-filter>\n')
+              f.write('        </activity>\n')
+              f.write('        <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"/>\n')
+              f.write('        <service\n')
+              f.write('            android:name="com.google.androidbrowserhelper.trusted.DelegationService"\n')
+              f.write('            android:enabled="true"\n')
+              f.write('            android:exported="true">\n')
+              f.write('            <intent-filter>\n')
+              f.write('                <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE"/>\n')
+              f.write('                <category android:name="android.intent.category.DEFAULT"/>\n')
+              f.write('            </intent-filter>\n')
+              f.write('        </service>\n')
+              f.write('    </application>\n')
+              f.write('    <queries>\n')
+              f.write('        <intent>\n')
+              f.write('            <action android:name="android.support.customtabs.action.CustomTabsService"/>\n')
+              f.write('        </intent>\n')
+              f.write('    </queries>\n')
+              f.write('</manifest>\n')
 
           # strings.xml
           with open(f"{prj}/app/src/main/res/values/strings.xml", 'w') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n')
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+              f.write('<resources>\n')
               f.write('    <string name="app_name">SwiftDeal</string>\n')
               f.write('    <string name="asset_statements">[{\\"relation\\": [\\"delegate_permission/common.handle_all_urls\\"], \\"target\\": {\\"namespace\\": \\"web\\", \\"site\\": \\"https://swiftdeal-3cee9.web.app\\"}}]</string>\n')
               f.write('</resources>\n')
 
           # colors.xml
           with open(f"{prj}/app/src/main/res/values/colors.xml", 'w') as f:
-              f.write("""<?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="colorPrimary">#FFF9D71C</color>
-              <color name="colorPrimaryDark">#FF000000</color>
-              <color name="backgroundColor">#FF000000</color>
-          </resources>
-          """)
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+              f.write('<resources>\n')
+              f.write('    <color name="colorPrimary">#FFF9D71C</color>\n')
+              f.write('    <color name="colorPrimaryDark">#FF000000</color>\n')
+              f.write('    <color name="backgroundColor">#FF000000</color>\n')
+              f.write('</resources>\n')
 
           # styles.xml
           with open(f"{prj}/app/src/main/res/values/styles.xml", 'w') as f:
-              f.write("""<?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
-                  <item name="colorPrimary">@color/colorPrimary</item>
-                  <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-                  <item name="android:windowBackground">@color/backgroundColor</item>
-              </style>
-          </resources>
-          """)
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+              f.write('<resources>\n')
+              f.write('    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">\n')
+              f.write('        <item name="colorPrimary">@color/colorPrimary</item>\n')
+              f.write('        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>\n')
+              f.write('        <item name="android:windowBackground">@color/backgroundColor</item>\n')
+              f.write('    </style>\n')
+              f.write('</resources>\n')
 
-          print("=== All project files created ===")
-          for root, dirs, files in os.walk(prj):
-              for fname in files:
-                  path = os.path.join(root, fname)
-                  print(f"  {path} ({os.path.getsize(path)} bytes)")
+          print("All project files created successfully")
 
       - name: Download Icon
         run: curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
-      - name: Verify Gradle Files
-        run: |
-          echo "=== Root build.gradle (first 3 lines) ==="
-          head -3 $HOME/twa/build.gradle
-          echo "=== App build.gradle (first 3 lines) ==="
-          head -3 $HOME/twa/app/build.gradle
-          echo "=== No leading spaces check ==="
-          python3 -c "
-          for f in ['$HOME/twa/build.gradle', '$HOME/twa/app/build.gradle']:
-              line1 = open(f).readline()
-              spaces = len(line1) - len(line1.lstrip())
-              print(f'{f}: first line has {spaces} leading spaces: {repr(line1[:30])}')"
 
       - name: Build AAB
         run: |
