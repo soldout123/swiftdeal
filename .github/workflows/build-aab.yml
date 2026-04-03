@@ -6,13 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -22,137 +17,305 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept Android SDK Licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install Bubblewrap and Expect
-        run: |
-          npm install -g @bubblewrap/cli
-          sudo apt-get install -y expect
-
-      - name: Configure Bubblewrap
-        run: |
-          mkdir -p ~/.bubblewrap
-          echo '{"jdkPath":"'"$JAVA_HOME"'","androidSdkPath":"'"$ANDROID_HOME"'"}' > ~/.bubblewrap/config.json
-          cat ~/.bubblewrap/config.json
+      - name: Accept Licenses
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $HOME/signing.keystore
           ls -la $HOME/signing.keystore
 
-      - name: Initialize Bubblewrap Project with Expect
+      - name: Create TWA Project
         run: |
-          mkdir -p $HOME/twa-build && cd $HOME/twa-build
+          mkdir -p $HOME/twa/app/src/main/res/values
+          mkdir -p $HOME/twa/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p $HOME/twa/app/src/main/res/xml
+          mkdir -p $HOME/twa/gradle/wrapper
 
-          export KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
-          export KS_PASS="${{ secrets.KEYSTORE_PASSWORD }}"
+          # Download icon
+          curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-          expect << 'EXPECT_EOF'
-          set timeout 180
-          spawn bubblewrap init --manifest=https://swiftdeal-3cee9.web.app/manifest.json
-
-          # Loop through all prompts
-          expect {
-              # JDK/SDK install prompts - say No (we pre-installed)
-              "install the JDK" { send "No\r"; exp_continue }
-              "install the Android" { send "No\r"; exp_continue }
-
-              # App config - accept defaults except package ID and version
-              "Application ID" { send "com.swiftdeal.app\r"; exp_continue }
-              "version name" { send "9.0.0.0\r"; exp_continue }
-              "version code" { send "9\r"; exp_continue }
-
-              # Location delegation - YES (fixes map!)
-              -re "(?i)location" { send "y\r"; exp_continue }
-
-              # Play Billing - No
-              -re "(?i)billing" { send "n\r"; exp_continue }
-
-              # Signing key prompts
-              -re "(?i)existing.*signing" { send "y\r"; exp_continue }
-              -re "(?i)key store location|keystore.*path|path.*key" {
-                  send "$env(HOME)/signing.keystore\r"
-                  exp_continue
+          # Root build.gradle
+          cat > $HOME/twa/build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
               }
-              -re "(?i)key.*alias|alias.*name" {
-                  send "$env(KEY_ALIAS)\r"
-                  exp_continue
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.2'
               }
-              -re "(?i)create.*signing|generate.*key|new.*key" { send "n\r"; exp_continue }
-
-              # Password prompts
-              -re "(?i)store.*password|keystore.*password" {
-                  send "$env(KS_PASS)\r"
-                  exp_continue
-              }
-              -re "(?i)key.*password" {
-                  send "$env(KS_PASS)\r"
-                  exp_continue
-              }
-
-              # Any other prompt - accept default
-              "?" { send "\r"; exp_continue }
-              ">" { send "\r"; exp_continue }
-
-              # Done
-              eof { puts "Bubblewrap init completed" }
-              timeout { puts "Timed out - continuing anyway" }
           }
-          EXPECT_EOF
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
 
-          echo "=== Init complete. Files: ==="
-          ls -la $HOME/twa-build/
+          # settings.gradle
+          cat > $HOME/twa/settings.gradle << 'EOF'
+          include ':app'
+          EOF
 
-      - name: Verify and Fix TWA Manifest
+          # gradle.properties
+          cat > $HOME/twa/gradle.properties << 'EOF'
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx2048m
+          EOF
+
+          # Gradle wrapper properties
+          cat > $HOME/twa/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip
+          EOF
+
+          # App build.gradle
+          cat > $HOME/twa/app/build.gradle << 'APPGRADLE'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace "com.swiftdeal.app"
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.swiftdeal.app"
+                  minSdk 19
+                  targetSdk 34
+                  versionCode 9
+                  versionName "9.0.0.0"
+              }
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("KEYSTORE_PATH") ?: "${System.getProperty('user.home')}/signing.keystore")
+                      storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
+                      keyAlias System.getenv("KEY_ALIAS") ?: ""
+                      keyPassword System.getenv("KEY_PASSWORD") ?: ""
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+
+          dependencies {
+              implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+          }
+          APPGRADLE
+
+          # AndroidManifest.xml
+          cat > $HOME/twa/app/src/main/AndroidManifest.xml << 'MANIFEST'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+              <application
+                  android:name="android.app.Application"
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:theme="@style/AppTheme"
+                  android:supportsRtl="true">
+
+                  <meta-data
+                      android:name="asset_statements"
+                      android:resource="@string/asset_statements" />
+
+                  <activity
+                      android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait">
+                      <tools:replace="android:screenOrientation"/>
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.DEFAULT_URL"
+                          android:value="https://swiftdeal-3cee9.web.app" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR"
+                          android:value="#000000" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR"
+                          android:value="#000000" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.SPLASH_IMAGE_DRAWABLE"
+                          android:resource="@mipmap/ic_launcher" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.SPLASH_SCREEN_BACKGROUND_COLOR"
+                          android:value="#000000" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION"
+                          android:value="portrait" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.DISPLAY_MODE"
+                          android:value="standalone" />
+
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
+                          android:value="@string/fallback_type" />
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+
+                      <intent-filter android:autoVerify="true">
+                          <action android:name="android.intent.action.VIEW"/>
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE"/>
+                          <data android:scheme="https" android:host="swiftdeal-3cee9.web.app"/>
+                      </intent-filter>
+                  </activity>
+
+                  <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity"/>
+
+                  <service
+                      android:name="com.google.androidbrowserhelper.trusted.DelegationService"
+                      android:enabled="true"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE"/>
+                          <category android:name="android.intent.category.DEFAULT"/>
+                      </intent-filter>
+                  </service>
+
+                  <activity
+                      android:name="com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity"
+                      android:enabled="true"/>
+
+                  <provider
+                      android:name="com.google.androidbrowserhelper.trusted.sharing.ExtraCommandProxyProvider"
+                      android:authorities="com.swiftdeal.app.extracommands"
+                      android:exported="true"
+                      android:grantUriPermissions="true">
+                  </provider>
+
+                  <!-- Location Delegation -->
+                  <service
+                      android:name="com.google.androidbrowserhelper.locationdelegation.LocationDelegationExtraCommandHandler"
+                      android:enabled="true"
+                      android:exported="true">
+                  </service>
+
+              </application>
+
+              <queries>
+                  <intent>
+                      <action android:name="android.support.customtabs.action.CustomTabsService" />
+                  </intent>
+              </queries>
+
+          </manifest>
+          MANIFEST
+
+          # Fix: add tools namespace to manifest
+          sed -i 's|<manifest xmlns:android|<manifest xmlns:tools="http://schemas.android.com/tools" xmlns:android|' $HOME/twa/app/src/main/AndroidManifest.xml
+
+          # strings.xml
+          cat > $HOME/twa/app/src/main/res/values/strings.xml << 'STRINGS'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">SwiftDeal</string>
+              <string name="asset_statements">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://swiftdeal-3cee9.web.app\"}}]</string>
+              <string name="fallback_type">customtabs</string>
+          </resources>
+          STRINGS
+
+          # colors.xml
+          cat > $HOME/twa/app/src/main/res/values/colors.xml << 'COLORS'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="colorPrimary">#f9d71c</color>
+              <color name="colorPrimaryDark">#000000</color>
+              <color name="navigationColor">#000000</color>
+              <color name="backgroundColor">#000000</color>
+          </resources>
+          COLORS
+
+          # styles.xml
+          cat > $HOME/twa/app/src/main/res/values/styles.xml << 'STYLES'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="colorPrimary">@color/colorPrimary</item>
+                  <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+                  <item name="android:windowBackground">@color/backgroundColor</item>
+              </style>
+          </resources>
+          STYLES
+
+          # Gradle wrapper script
+          curl -sL "https://raw.githubusercontent.com/nicktorwald/gradle-wrapper/refs/heads/master/gradlew" -o $HOME/twa/gradlew || {
+            cat > $HOME/twa/gradlew << 'GRADLEW'
+          #!/bin/sh
+          APP_HOME=$(cd "$(dirname "$0")" && pwd)
+          CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+          exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+          GRADLEW
+          }
+          chmod +x $HOME/twa/gradlew
+
+          # Download gradle wrapper jar
+          curl -sL "https://github.com/nicktorwald/gradle-wrapper/raw/refs/heads/master/gradle/wrapper/gradle-wrapper.jar" -o $HOME/twa/gradle/wrapper/gradle-wrapper.jar || \
+          curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip && \
+          unzip -q /tmp/gradle.zip -d /tmp && \
+          cp /tmp/gradle-8.5/lib/gradle-wrapper-*.jar $HOME/twa/gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+
+          echo "=== Project structure ==="
+          find $HOME/twa -type f | head -30
+
+      - name: Install Gradle
         run: |
-          cd $HOME/twa-build
-          if [ ! -f twa-manifest.json ]; then
-            echo "ERROR: twa-manifest.json not created"
-            exit 1
+          cd $HOME/twa
+          # Use SDK's built-in gradle or install it
+          if ! command -v gradle &>/dev/null; then
+            curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /opt
+            export PATH="/opt/gradle-8.5/bin:$PATH"
+            echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
           fi
+          gradle --version
 
-          sudo apt-get install -y jq > /dev/null 2>&1
-          TEMP=$(mktemp)
-          jq --arg home "$HOME" --arg alias "${{ secrets.KEY_ALIAS }}" '
-            .packageId = "com.swiftdeal.app" |
-            .display = "standalone" |
-            .orientation = "portrait" |
-            .appVersion = "9.0.0.0" |
-            .appVersionCode = 9 |
-            .features.locationDelegation.enabled = true |
-            .enableNotifications = true |
-            .signingKey.path = ($home + "/signing.keystore") |
-            .signingKey.alias = $alias |
-            .themeColor = "#f9d71c" |
-            .navigationColor = "#000000" |
-            .backgroundColor = "#000000"
-          ' twa-manifest.json > "$TEMP" && mv "$TEMP" twa-manifest.json
-
-          echo "=== Final twa-manifest.json ==="
-          cat twa-manifest.json
-
-      - name: Update and Build
+      - name: Build AAB
         run: |
-          cd $HOME/twa-build
-          yes "" | bubblewrap update --skipVersionUpgrade 2>&1 || true
-          bubblewrap build --skipPwaValidation \
-            --signingKeyPath="$HOME/signing.keystore" \
-            --signingKeyAlias="${{ secrets.KEY_ALIAS }}"
-        env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          cd $HOME/twa
+          export KEYSTORE_PATH="$HOME/signing.keystore"
+          export KEYSTORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}"
+          export KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
+          export KEY_PASSWORD="${{ secrets.KEY_PASSWORD }}"
+
+          gradle bundleRelease --no-daemon --stacktrace
+
+          echo "=== Looking for AAB ==="
+          find . -name "*.aab" -type f
 
       - name: Collect AAB
         run: |
-          AAB=$(find $HOME/twa-build -name "*.aab" -type f 2>/dev/null | head -1)
+          AAB=$(find $HOME/twa -name "*.aab" -type f | head -1)
           if [ -n "$AAB" ]; then
             cp "$AAB" $GITHUB_WORKSPACE/SwiftDeal-v9.aab
             echo "SUCCESS: $(ls -lh $GITHUB_WORKSPACE/SwiftDeal-v9.aab)"
           else
-            echo "=== No AAB found. Checking for errors ==="
-            find $HOME/twa-build -type f -name "*.aab" -o -name "*.apk" 2>/dev/null
-            ls -laR $HOME/twa-build/ | tail -30
+            echo "ERROR: No AAB found"
+            find $HOME/twa -name "*.apk" -o -name "*.aab" 2>/dev/null
+            cat $HOME/twa/app/build/outputs/logs/*.log 2>/dev/null || true
             exit 1
           fi
 
