@@ -49,10 +49,10 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.2'
-              }
+             dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+          } 
           }
           allprojects {
               repositories {
