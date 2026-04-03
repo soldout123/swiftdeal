@@ -23,14 +23,6 @@ jobs:
       - name: Accept Licenses
         run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
-      - name: Test Keystore
-        run: |
-          ls -la signing.keystore
-          keytool -list -keystore signing.keystore -storepass "$KS_PASS" -storetype PKCS12
-          echo "KEYSTORE OK"
-        env:
-          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
-
       - name: Install Gradle
         run: |
           curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
@@ -43,8 +35,8 @@ jobs:
           import os
 
           home = os.environ['HOME']
-          ws = os.environ['GITHUB_WORKSPACE']
           prj = f"{home}/twa"
+          ws = os.environ['GITHUB_WORKSPACE']
           ks = f"{ws}/signing.keystore"
 
           for d in ['app/src/main/res/values', 'app/src/main/res/mipmap-xxxhdpi']:
@@ -88,18 +80,8 @@ jobs:
               f.write("        versionCode 9\n")
               f.write('        versionName "9.0.0.0"\n')
               f.write("    }\n")
-              f.write("    signingConfigs {\n")
-              f.write("        release {\n")
-              f.write(f'            storeFile file("{ks}")\n')
-              f.write('            storePassword System.getenv("KEYSTORE_PASSWORD")\n')
-              f.write('            keyAlias System.getenv("KEY_ALIAS")\n')
-              f.write('            keyPassword System.getenv("KEY_PASSWORD")\n')
-              f.write('            storeType "PKCS12"\n')
-              f.write("        }\n")
-              f.write("    }\n")
               f.write("    buildTypes {\n")
               f.write("        release {\n")
-              f.write("            signingConfig signingConfigs.release\n")
               f.write("            minifyEnabled false\n")
               f.write("        }\n")
               f.write("    }\n")
@@ -202,25 +184,31 @@ jobs:
       - name: Download Icon
         run: curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-      - name: Build AAB
+      - name: Build Unsigned AAB
         run: |
           cd $HOME/twa
           gradle bundleRelease --no-daemon
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: my-key-alias
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Collect AAB
+      - name: Sign AAB with jarsigner
         run: |
-          AAB=$(find $HOME/twa -name "*.aab" -type f | head -1)
-          if [ -n "$AAB" ]; then
-            cp "$AAB" $GITHUB_WORKSPACE/SwiftDeal-v9.aab
-            echo "SUCCESS: $(ls -lh $GITHUB_WORKSPACE/SwiftDeal-v9.aab)"
-          else
-            echo "ERROR: No AAB found"
-            exit 1
-          fi
+          UNSIGNED=$(find $HOME/twa -name "*.aab" -type f | head -1)
+          echo "Found unsigned AAB: $UNSIGNED"
+
+          jarsigner -verbose \
+            -keystore $GITHUB_WORKSPACE/signing.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -storetype PKCS12 \
+            -signedjar $HOME/SwiftDeal-v9-signed.aab \
+            "$UNSIGNED" \
+            "my-key-alias"
+
+          echo "=== Verify signature ==="
+          jarsigner -verify $HOME/SwiftDeal-v9-signed.aab
+          echo "SIGNING COMPLETE"
+
+      - name: Upload Signed AAB
+        run: cp $HOME/SwiftDeal-v9-signed.aab $GITHUB_WORKSPACE/SwiftDeal-v9.aab
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
