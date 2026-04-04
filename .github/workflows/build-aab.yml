@@ -35,7 +35,6 @@ jobs:
           import os
           home = os.environ['HOME']
           prj = f"{home}/twa"
-          ws = os.environ['GITHUB_WORKSPACE']
 
           for d in [
               'app/src/main/java/com/swiftdeal/app',
@@ -83,7 +82,7 @@ jobs:
               f.write('        applicationId "com.swiftdeal.app"\n')
               f.write("        minSdk 21\n")
               f.write("        targetSdk 35\n")
-              f.write("        versionCode 14\n")
+              f.write("        versionCode 16\n")
               f.write('        versionName "9.0.0.0"\n')
               f.write("    }\n")
               f.write("    buildTypes {\n")
@@ -130,7 +129,10 @@ jobs:
               f.write("    private ValueCallback<Uri[]> fileCallback;\n")
               f.write("    private static final int FILE_CHOOSER = 1;\n")
               f.write("    private static final int PERMISSIONS_REQ = 100;\n")
-              f.write("    private static final String URL = \"https://swiftdeal-3cee9.web.app\";\n\n")
+              f.write("    // Load URL with ?swiftdeal_app=1 so website can hide Google Sign-In button\n")
+              f.write("    private static final String URL = \"https://swiftdeal-3cee9.web.app/?swiftdeal_app=1\";\n")
+              f.write("    // Clean Chrome UA - no 'wv' marker\n")
+              f.write("    private static final String CHROME_UA = \"Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36\";\n\n")
               f.write("    @Override\n")
               f.write("    protected void onCreate(Bundle savedInstanceState) {\n")
               f.write("        super.onCreate(savedInstanceState);\n\n")
@@ -157,13 +159,12 @@ jobs:
               f.write("        s.setCacheMode(WebSettings.LOAD_DEFAULT);\n")
               f.write("        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);\n")
               f.write("        s.setJavaScriptCanOpenWindowsAutomatically(true);\n")
-              f.write("        s.setSupportMultipleWindows(false);\n")
-              f.write("        s.setUserAgentString(s.getUserAgentString() + \" SwiftDealApp/9.0\");\n\n")
+              f.write("        s.setUserAgentString(CHROME_UA);\n\n")
               f.write("        webView.setWebViewClient(new WebViewClient() {\n")
               f.write("            @Override\n")
               f.write("            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {\n")
               f.write("                String url = request.getUrl().toString();\n")
-              f.write("                if (url.contains(\"swiftdeal\") || url.contains(\"googleapis.com\") || url.contains(\"accounts.google.com\") || url.contains(\"firebaseapp.com\")) {\n")
+              f.write("                if (url.contains(\"swiftdeal\") || url.contains(\"google.com\") || url.contains(\"firebaseapp.com\") || url.contains(\"gstatic.com\") || url.contains(\"googleapis.com\")) {\n")
               f.write("                    return false;\n")
               f.write("                }\n")
               f.write("                Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());\n")
@@ -300,7 +301,6 @@ jobs:
           convert /tmp/icon.png -resize 96x96 $HOME/twa/app/src/main/res/mipmap-xhdpi/ic_launcher.png
           convert /tmp/icon.png -resize 144x144 $HOME/twa/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           convert /tmp/icon.png -resize 192x192 $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          echo "Icons created at all densities"
 
       - name: Build AAB
         run: |
