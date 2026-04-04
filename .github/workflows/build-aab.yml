@@ -83,7 +83,7 @@ jobs:
               f.write('        applicationId "com.swiftdeal.app"\n')
               f.write("        minSdk 21\n")
               f.write("        targetSdk 35\n")
-              f.write("        versionCode 17\n")
+              f.write("        versionCode 18\n")
               f.write('        versionName "9.0.0.0"\n')
               f.write("    }\n")
               f.write("    buildTypes {\n")
