@@ -40,11 +40,14 @@ jobs:
           for d in [
               'app/src/main/java/com/swiftdeal/app',
               'app/src/main/res/values',
+              'app/src/main/res/mipmap-mdpi',
+              'app/src/main/res/mipmap-hdpi',
+              'app/src/main/res/mipmap-xhdpi',
+              'app/src/main/res/mipmap-xxhdpi',
               'app/src/main/res/mipmap-xxxhdpi',
           ]:
               os.makedirs(f"{prj}/{d}", exist_ok=True)
 
-          # --- Root build.gradle ---
           with open(f"{prj}/build.gradle",'w') as f:
               f.write("buildscript {\n")
               f.write("    repositories {\n")
@@ -69,7 +72,6 @@ jobs:
               f.write("android.useAndroidX=true\n")
               f.write("org.gradle.jvmargs=-Xmx2048m\n")
 
-          # --- App build.gradle ---
           with open(f"{prj}/app/build.gradle",'w') as f:
               f.write("plugins {\n")
               f.write("    id 'com.android.application'\n")
@@ -81,7 +83,7 @@ jobs:
               f.write('        applicationId "com.swiftdeal.app"\n')
               f.write("        minSdk 21\n")
               f.write("        targetSdk 35\n")
-              f.write("        versionCode 13\n")
+              f.write("        versionCode 14\n")
               f.write('        versionName "9.0.0.0"\n')
               f.write("    }\n")
               f.write("    buildTypes {\n")
@@ -99,7 +101,6 @@ jobs:
               f.write("    implementation 'androidx.webkit:webkit:1.8.0'\n")
               f.write("}\n")
 
-          # --- MainActivity.java ---
           with open(f"{prj}/app/src/main/java/com/swiftdeal/app/MainActivity.java",'w') as f:
               f.write("package com.swiftdeal.app;\n\n")
               f.write("import android.Manifest;\n")
@@ -110,9 +111,9 @@ jobs:
               f.write("import android.net.Uri;\n")
               f.write("import android.os.Build;\n")
               f.write("import android.os.Bundle;\n")
-              f.write("import android.view.View;\n")
               f.write("import android.view.Window;\n")
               f.write("import android.view.WindowManager;\n")
+              f.write("import android.webkit.CookieManager;\n")
               f.write("import android.webkit.GeolocationPermissions;\n")
               f.write("import android.webkit.ValueCallback;\n")
               f.write("import android.webkit.WebChromeClient;\n")
@@ -133,18 +134,16 @@ jobs:
               f.write("    @Override\n")
               f.write("    protected void onCreate(Bundle savedInstanceState) {\n")
               f.write("        super.onCreate(savedInstanceState);\n\n")
-              f.write("        // Standalone mode: black status bar and nav bar, no action bar\n")
               f.write("        Window w = getWindow();\n")
               f.write("        w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);\n")
               f.write("        w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);\n")
               f.write("        w.setStatusBarColor(Color.BLACK);\n")
               f.write("        w.setNavigationBarColor(Color.BLACK);\n\n")
-              f.write("        // Request all permissions upfront\n")
               f.write("        requestAllPermissions();\n\n")
-              f.write("        // Create WebView\n")
               f.write("        webView = new WebView(this);\n")
               f.write("        setContentView(webView);\n\n")
-              f.write("        // Configure WebView\n")
+              f.write("        CookieManager.getInstance().setAcceptCookie(true);\n")
+              f.write("        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);\n\n")
               f.write("        WebSettings s = webView.getSettings();\n")
               f.write("        s.setJavaScriptEnabled(true);\n")
               f.write("        s.setDomStorageEnabled(true);\n")
@@ -157,13 +156,14 @@ jobs:
               f.write("        s.setDatabaseEnabled(true);\n")
               f.write("        s.setCacheMode(WebSettings.LOAD_DEFAULT);\n")
               f.write("        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);\n")
+              f.write("        s.setJavaScriptCanOpenWindowsAutomatically(true);\n")
+              f.write("        s.setSupportMultipleWindows(false);\n")
               f.write("        s.setUserAgentString(s.getUserAgentString() + \" SwiftDealApp/9.0\");\n\n")
-              f.write("        // Handle navigation inside app\n")
               f.write("        webView.setWebViewClient(new WebViewClient() {\n")
               f.write("            @Override\n")
               f.write("            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {\n")
-              f.write("                String host = request.getUrl().getHost();\n")
-              f.write("                if (host != null && host.contains(\"swiftdeal\")) {\n")
+              f.write("                String url = request.getUrl().toString();\n")
+              f.write("                if (url.contains(\"swiftdeal\") || url.contains(\"googleapis.com\") || url.contains(\"accounts.google.com\") || url.contains(\"firebaseapp.com\")) {\n")
               f.write("                    return false;\n")
               f.write("                }\n")
               f.write("                Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());\n")
@@ -171,7 +171,6 @@ jobs:
               f.write("                return true;\n")
               f.write("            }\n")
               f.write("        });\n\n")
-              f.write("        // Handle geolocation, file uploads, microphone, camera\n")
               f.write("        webView.setWebChromeClient(new WebChromeClient() {\n")
               f.write("            @Override\n")
               f.write("            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {\n")
@@ -180,7 +179,6 @@ jobs:
               f.write("            @Override\n")
               f.write("            public void onPermissionRequest(PermissionRequest request) {\n")
               f.write("                runOnUiThread(new Runnable() {\n")
-              f.write("                    @Override\n")
               f.write("                    public void run() {\n")
               f.write("                        request.grant(request.getResources());\n")
               f.write("                    }\n")
@@ -190,9 +188,8 @@ jobs:
               f.write("            public boolean onShowFileChooser(WebView wv, ValueCallback<Uri[]> cb, FileChooserParams params) {\n")
               f.write("                if (fileCallback != null) fileCallback.onReceiveValue(null);\n")
               f.write("                fileCallback = cb;\n")
-              f.write("                Intent intent = params.createIntent();\n")
               f.write("                try {\n")
-              f.write("                    startActivityForResult(intent, FILE_CHOOSER);\n")
+              f.write("                    startActivityForResult(params.createIntent(), FILE_CHOOSER);\n")
               f.write("                } catch (Exception e) {\n")
               f.write("                    fileCallback = null;\n")
               f.write("                    return false;\n")
@@ -203,61 +200,35 @@ jobs:
               f.write("        webView.loadUrl(URL);\n")
               f.write("    }\n\n")
               f.write("    private void requestAllPermissions() {\n")
-              f.write("        ArrayList<String> perms = new ArrayList<>();\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {\n")
-              f.write("            perms.add(Manifest.permission.ACCESS_FINE_LOCATION);\n")
-              f.write("        }\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {\n")
-              f.write("            perms.add(Manifest.permission.ACCESS_COARSE_LOCATION);\n")
-              f.write("        }\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {\n")
-              f.write("            perms.add(Manifest.permission.CAMERA);\n")
-              f.write("        }\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {\n")
-              f.write("            perms.add(Manifest.permission.RECORD_AUDIO);\n")
-              f.write("        }\n")
-              f.write("        if (Build.VERSION.SDK_INT >= 33) {\n")
-              f.write("            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {\n")
-              f.write("                perms.add(Manifest.permission.POST_NOTIFICATIONS);\n")
-              f.write("            }\n")
-              f.write("        }\n")
-              f.write("        if (!perms.isEmpty()) {\n")
-              f.write("            ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERMISSIONS_REQ);\n")
-              f.write("        }\n")
+              f.write("        ArrayList<String> p = new ArrayList<>();\n")
+              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)\n")
+              f.write("            p.add(Manifest.permission.ACCESS_FINE_LOCATION);\n")
+              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)\n")
+              f.write("            p.add(Manifest.permission.ACCESS_COARSE_LOCATION);\n")
+              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)\n")
+              f.write("            p.add(Manifest.permission.CAMERA);\n")
+              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)\n")
+              f.write("            p.add(Manifest.permission.RECORD_AUDIO);\n")
+              f.write("        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)\n")
+              f.write("            p.add(Manifest.permission.POST_NOTIFICATIONS);\n")
+              f.write("        if (!p.isEmpty())\n")
+              f.write("            ActivityCompat.requestPermissions(this, p.toArray(new String[0]), PERMISSIONS_REQ);\n")
               f.write("    }\n\n")
               f.write("    @Override\n")
-              f.write("    protected void onActivityResult(int requestCode, int resultCode, Intent data) {\n")
-              f.write("        if (requestCode == FILE_CHOOSER && fileCallback != null) {\n")
+              f.write("    protected void onActivityResult(int req, int res, Intent data) {\n")
+              f.write("        if (req == FILE_CHOOSER && fileCallback != null) {\n")
               f.write("            Uri[] result = null;\n")
-              f.write("            if (resultCode == RESULT_OK && data != null) {\n")
-              f.write("                String str = data.getDataString();\n")
-              f.write("                if (str != null) result = new Uri[]{Uri.parse(str)};\n")
-              f.write("            }\n")
+              f.write("            if (res == RESULT_OK && data != null && data.getDataString() != null)\n")
+              f.write("                result = new Uri[]{Uri.parse(data.getDataString())};\n")
               f.write("            fileCallback.onReceiveValue(result);\n")
               f.write("            fileCallback = null;\n")
               f.write("        }\n")
               f.write("    }\n\n")
-              f.write("    @Override\n")
-              f.write("    public void onBackPressed() {\n")
-              f.write("        if (webView.canGoBack()) {\n")
-              f.write("            webView.goBack();\n")
-              f.write("        } else {\n")
-              f.write("            super.onBackPressed();\n")
-              f.write("        }\n")
-              f.write("    }\n\n")
-              f.write("    @Override\n")
-              f.write("    protected void onResume() {\n")
-              f.write("        super.onResume();\n")
-              f.write("        webView.onResume();\n")
-              f.write("    }\n\n")
-              f.write("    @Override\n")
-              f.write("    protected void onPause() {\n")
-              f.write("        webView.onPause();\n")
-              f.write("        super.onPause();\n")
-              f.write("    }\n")
+              f.write("    @Override public void onBackPressed() { if (webView.canGoBack()) webView.goBack(); else super.onBackPressed(); }\n")
+              f.write("    @Override protected void onResume() { super.onResume(); webView.onResume(); }\n")
+              f.write("    @Override protected void onPause() { webView.onPause(); super.onPause(); }\n")
               f.write("}\n")
 
-          # --- AndroidManifest.xml ---
           with open(f"{prj}/app/src/main/AndroidManifest.xml",'w') as f:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n')
               f.write('<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n')
@@ -294,14 +265,12 @@ jobs:
               f.write('    </application>\n')
               f.write('</manifest>\n')
 
-          # --- strings.xml ---
           with open(f"{prj}/app/src/main/res/values/strings.xml",'w') as f:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n')
               f.write('<resources>\n')
-              f.write('    <string name="app_name">SwiftDeal</string>\n')
+              f.write('    <string name="app_name">SwiftDeal- AI Smart Rides</string>\n')
               f.write('</resources>\n')
 
-          # --- colors.xml ---
           with open(f"{prj}/app/src/main/res/values/colors.xml",'w') as f:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n')
               f.write('<resources>\n')
@@ -310,7 +279,6 @@ jobs:
               f.write('    <color name="backgroundColor">#FF000000</color>\n')
               f.write('</resources>\n')
 
-          # --- styles.xml ---
           with open(f"{prj}/app/src/main/res/values/styles.xml",'w') as f:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n')
               f.write('<resources>\n')
@@ -323,8 +291,16 @@ jobs:
 
           print("All files created successfully")
 
-      - name: Download Icon
-        run: curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - name: Download and Resize Icons
+        run: |
+          curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o /tmp/icon.png
+          sudo apt-get install -y imagemagick > /dev/null 2>&1
+          convert /tmp/icon.png -resize 48x48 $HOME/twa/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert /tmp/icon.png -resize 72x72 $HOME/twa/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert /tmp/icon.png -resize 96x96 $HOME/twa/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert /tmp/icon.png -resize 144x144 $HOME/twa/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert /tmp/icon.png -resize 192x192 $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          echo "Icons created at all densities"
 
       - name: Build AAB
         run: |
