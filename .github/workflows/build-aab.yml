@@ -31,11 +31,16 @@ jobs:
 
       - name: Create Project
         shell: python3 {0}
+        env:
+          BUILD_VERSION_CODE: ${{ github.run_number }}
         run: |
           import os
           home = os.environ['HOME']
           prj = f"{home}/twa"
           ws = os.environ['GITHUB_WORKSPACE']
+          # Auto-increment versionCode using GitHub Actions run number, offset to stay above 18
+          version_code = 100 + int(os.environ.get('BUILD_VERSION_CODE', '1'))
+          version_name = f"9.0.0.{version_code - 100}"
 
           for d in [
               'app/src/main/java/com/swiftdeal/app',
@@ -83,8 +88,8 @@ jobs:
               f.write('        applicationId "com.swiftdeal.app"\n')
               f.write("        minSdk 21\n")
               f.write("        targetSdk 35\n")
-              f.write("        versionCode 18\n")
-              f.write('        versionName "9.0.0.0"\n')
+              f.write(f"        versionCode {version_code}\n")
+              f.write(f'        versionName "{version_name}"\n')
               f.write("    }\n")
               f.write("    buildTypes {\n")
               f.write("        release {\n")
@@ -268,7 +273,7 @@ jobs:
           with open(f"{prj}/app/src/main/res/values/strings.xml",'w') as f:
               f.write('<?xml version="1.0" encoding="utf-8"?>\n')
               f.write('<resources>\n')
-              f.write('    <string name="app_name">SwiftDeal- AI Smart Rides</string>\n')
+              f.write('    <string name="app_name">SwiftDeal</string>\n')
               f.write('</resources>\n')
 
           with open(f"{prj}/app/src/main/res/values/colors.xml",'w') as f:
@@ -289,7 +294,7 @@ jobs:
               f.write('    </style>\n')
               f.write('</resources>\n')
 
-          print("All files created successfully")
+          print(f"All files created successfully — versionCode={version_code} versionName={version_name}")
 
       - name: Download and Resize Icons
         run: |
@@ -310,19 +315,21 @@ jobs:
       - name: Sign AAB
         run: |
           UNSIGNED=$(find $HOME/twa -name "*.aab" -type f | head -1)
-          jarsigner \
-            -keystore $GITHUB_WORKSPACE/signing.keystore \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -storetype PKCS12 \
-            -signedjar $GITHUB_WORKSPACE/SwiftDeal-v9.aab \
-            "$UNSIGNED" \
-            "my-key-alias"
-          jarsigner -verify $GITHUB_WORKSPACE/SwiftDeal-v9.aab
+          echo "Found unsigned AAB at: $UNSIGNED"
+          jarsigner -keystore $GITHUB_WORKSPACE/signing.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEYSTORE_PASSWORD }}" -storetype PKCS12 -signedjar "$GITHUB_WORKSPACE/SwiftDeal-signed.aab" "$UNSIGNED" "my-key-alias"
+          jarsigner -verify "$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+          echo "Signed AAB ready at: $GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+          ls -la "$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+
+      - name: Verify Final AAB Label
+        run: |
+          cd $GITHUB_WORKSPACE
+          unzip -p SwiftDeal-signed.aab base/resources.pb | strings | grep -i "swiftdeal\|play.billing" | head -5
+          echo "If you see 'SwiftDeal' above and NO 'Play Billing', the build is correct."
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: SwiftDeal-v9-AAB
-          path: SwiftDeal-v9.aab
+          name: SwiftDeal-AAB
+          path: SwiftDeal-signed.aab
           retention-days: 30
