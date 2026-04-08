@@ -1,4 +1,15 @@
-name: Build SwiftDeal AAB
+name: Build SwiftDeal AAB (PWABuilder Source)
+
+# Builds the PWABuilder-generated TWA source from /twa-source/ with these fixes:
+#   - minSdk lowered from 23 → 21 (recovers ~1,000 dropped devices)
+#   - Play Billing helper library removed (fixes "Play Billing" launcher name)
+#   - PaymentActivity / PaymentService removed from AndroidManifest.xml
+#
+# Uses these existing repo secrets:
+#   KEYSTORE_BASE64    — base64-encoded keystore file
+#   KEYSTORE_PASSWORD  — store password
+#   KEY_ALIAS          — key alias inside the keystore
+#   KEY_PASSWORD       — key password
 
 on:
   workflow_dispatch:
@@ -6,7 +17,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -20,314 +31,101 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept Licenses
+      - name: Accept SDK Licenses
         run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
-      - name: Install Gradle
+      - name: Install Required SDK Components
         run: |
-          curl -sL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
+          sdkmanager "build-tools;34.0.0" "platforms;android-35" "platforms;android-36" || true
 
-      - name: Create Project
-        shell: python3 {0}
-        env:
-          BUILD_VERSION_CODE: ${{ github.run_number }}
+      - name: Verify TWA Source Exists
         run: |
-          import os
-          home = os.environ['HOME']
-          prj = f"{home}/twa"
-          ws = os.environ['GITHUB_WORKSPACE']
-          # Auto-increment versionCode using GitHub Actions run number, offset to stay above 18
-          version_code = 100 + int(os.environ.get('BUILD_VERSION_CODE', '1'))
-          version_name = f"9.0.0.{version_code - 100}"
+          if [ ! -d "twa-source" ]; then
+            echo "ERROR: twa-source/ folder not found in repo root"
+            echo "Please commit the modified PWABuilder source to twa-source/"
+            exit 1
+          fi
+          echo "=== twa-source contents ==="
+          ls -la twa-source/
 
-          for d in [
-              'app/src/main/java/com/swiftdeal/app',
-              'app/src/main/res/values',
-              'app/src/main/res/mipmap-mdpi',
-              'app/src/main/res/mipmap-hdpi',
-              'app/src/main/res/mipmap-xhdpi',
-              'app/src/main/res/mipmap-xxhdpi',
-              'app/src/main/res/mipmap-xxxhdpi',
-          ]:
-              os.makedirs(f"{prj}/{d}", exist_ok=True)
-
-          with open(f"{prj}/build.gradle",'w') as f:
-              f.write("buildscript {\n")
-              f.write("    repositories {\n")
-              f.write("        google()\n")
-              f.write("        mavenCentral()\n")
-              f.write("    }\n")
-              f.write("    dependencies {\n")
-              f.write("        classpath 'com.android.tools.build:gradle:8.2.2'\n")
-              f.write("    }\n")
-              f.write("}\n")
-              f.write("allprojects {\n")
-              f.write("    repositories {\n")
-              f.write("        google()\n")
-              f.write("        mavenCentral()\n")
-              f.write("    }\n")
-              f.write("}\n")
-
-          with open(f"{prj}/settings.gradle",'w') as f:
-              f.write("include ':app'\n")
-
-          with open(f"{prj}/gradle.properties",'w') as f:
-              f.write("android.useAndroidX=true\n")
-              f.write("org.gradle.jvmargs=-Xmx2048m\n")
-
-          with open(f"{prj}/app/build.gradle",'w') as f:
-              f.write("plugins {\n")
-              f.write("    id 'com.android.application'\n")
-              f.write("}\n")
-              f.write("android {\n")
-              f.write('    namespace "com.swiftdeal.app"\n')
-              f.write("    compileSdk 35\n")
-              f.write("    defaultConfig {\n")
-              f.write('        applicationId "com.swiftdeal.app"\n')
-              f.write("        minSdk 21\n")
-              f.write("        targetSdk 35\n")
-              f.write(f"        versionCode {version_code}\n")
-              f.write(f'        versionName "{version_name}"\n')
-              f.write("    }\n")
-              f.write("    buildTypes {\n")
-              f.write("        release {\n")
-              f.write("            minifyEnabled false\n")
-              f.write("        }\n")
-              f.write("    }\n")
-              f.write("    compileOptions {\n")
-              f.write("        sourceCompatibility JavaVersion.VERSION_1_8\n")
-              f.write("        targetCompatibility JavaVersion.VERSION_1_8\n")
-              f.write("    }\n")
-              f.write("}\n")
-              f.write("dependencies {\n")
-              f.write("    implementation 'androidx.appcompat:appcompat:1.6.1'\n")
-              f.write("    implementation 'androidx.webkit:webkit:1.8.0'\n")
-              f.write("}\n")
-
-          with open(f"{prj}/app/src/main/java/com/swiftdeal/app/MainActivity.java",'w') as f:
-              f.write("package com.swiftdeal.app;\n\n")
-              f.write("import android.Manifest;\n")
-              f.write("import android.app.Activity;\n")
-              f.write("import android.content.Intent;\n")
-              f.write("import android.content.pm.PackageManager;\n")
-              f.write("import android.graphics.Color;\n")
-              f.write("import android.net.Uri;\n")
-              f.write("import android.os.Build;\n")
-              f.write("import android.os.Bundle;\n")
-              f.write("import android.view.Window;\n")
-              f.write("import android.view.WindowManager;\n")
-              f.write("import android.webkit.CookieManager;\n")
-              f.write("import android.webkit.GeolocationPermissions;\n")
-              f.write("import android.webkit.ValueCallback;\n")
-              f.write("import android.webkit.WebChromeClient;\n")
-              f.write("import android.webkit.WebResourceRequest;\n")
-              f.write("import android.webkit.WebSettings;\n")
-              f.write("import android.webkit.WebView;\n")
-              f.write("import android.webkit.WebViewClient;\n")
-              f.write("import android.webkit.PermissionRequest;\n")
-              f.write("import androidx.core.app.ActivityCompat;\n")
-              f.write("import androidx.core.content.ContextCompat;\n")
-              f.write("import java.util.ArrayList;\n\n")
-              f.write("public class MainActivity extends Activity {\n\n")
-              f.write("    private WebView webView;\n")
-              f.write("    private ValueCallback<Uri[]> fileCallback;\n")
-              f.write("    private static final int FILE_CHOOSER = 1;\n")
-              f.write("    private static final int PERMISSIONS_REQ = 100;\n")
-              f.write("    private static final String URL = \"https://swiftdeal-3cee9.web.app\";\n\n")
-              f.write("    @Override\n")
-              f.write("    protected void onCreate(Bundle savedInstanceState) {\n")
-              f.write("        super.onCreate(savedInstanceState);\n\n")
-              f.write("        Window w = getWindow();\n")
-              f.write("        w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);\n")
-              f.write("        w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);\n")
-              f.write("        w.setStatusBarColor(Color.BLACK);\n")
-              f.write("        w.setNavigationBarColor(Color.BLACK);\n\n")
-              f.write("        requestAllPermissions();\n\n")
-              f.write("        webView = new WebView(this);\n")
-              f.write("        setContentView(webView);\n\n")
-              f.write("        CookieManager.getInstance().setAcceptCookie(true);\n")
-              f.write("        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);\n\n")
-              f.write("        WebSettings s = webView.getSettings();\n")
-              f.write("        s.setJavaScriptEnabled(true);\n")
-              f.write("        s.setDomStorageEnabled(true);\n")
-              f.write("        s.setGeolocationEnabled(true);\n")
-              f.write("        s.setMediaPlaybackRequiresUserGesture(false);\n")
-              f.write("        s.setAllowFileAccess(true);\n")
-              f.write("        s.setAllowContentAccess(true);\n")
-              f.write("        s.setLoadWithOverviewMode(true);\n")
-              f.write("        s.setUseWideViewPort(true);\n")
-              f.write("        s.setDatabaseEnabled(true);\n")
-              f.write("        s.setCacheMode(WebSettings.LOAD_DEFAULT);\n")
-              f.write("        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);\n")
-              f.write("        s.setJavaScriptCanOpenWindowsAutomatically(true);\n")
-              f.write("        s.setSupportMultipleWindows(false);\n")
-              f.write("        s.setUserAgentString(s.getUserAgentString() + \" SwiftDealApp/9.0\");\n\n")
-              f.write("        webView.setWebViewClient(new WebViewClient() {\n")
-              f.write("            @Override\n")
-              f.write("            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {\n")
-              f.write("                String url = request.getUrl().toString();\n")
-              f.write("                if (url.contains(\"swiftdeal\") || url.contains(\"googleapis.com\") || url.contains(\"accounts.google.com\") || url.contains(\"firebaseapp.com\")) {\n")
-              f.write("                    return false;\n")
-              f.write("                }\n")
-              f.write("                Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());\n")
-              f.write("                startActivity(intent);\n")
-              f.write("                return true;\n")
-              f.write("            }\n")
-              f.write("        });\n\n")
-              f.write("        webView.setWebChromeClient(new WebChromeClient() {\n")
-              f.write("            @Override\n")
-              f.write("            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {\n")
-              f.write("                callback.invoke(origin, true, true);\n")
-              f.write("            }\n\n")
-              f.write("            @Override\n")
-              f.write("            public void onPermissionRequest(PermissionRequest request) {\n")
-              f.write("                runOnUiThread(new Runnable() {\n")
-              f.write("                    public void run() {\n")
-              f.write("                        request.grant(request.getResources());\n")
-              f.write("                    }\n")
-              f.write("                });\n")
-              f.write("            }\n\n")
-              f.write("            @Override\n")
-              f.write("            public boolean onShowFileChooser(WebView wv, ValueCallback<Uri[]> cb, FileChooserParams params) {\n")
-              f.write("                if (fileCallback != null) fileCallback.onReceiveValue(null);\n")
-              f.write("                fileCallback = cb;\n")
-              f.write("                try {\n")
-              f.write("                    startActivityForResult(params.createIntent(), FILE_CHOOSER);\n")
-              f.write("                } catch (Exception e) {\n")
-              f.write("                    fileCallback = null;\n")
-              f.write("                    return false;\n")
-              f.write("                }\n")
-              f.write("                return true;\n")
-              f.write("            }\n")
-              f.write("        });\n\n")
-              f.write("        webView.loadUrl(URL);\n")
-              f.write("    }\n\n")
-              f.write("    private void requestAllPermissions() {\n")
-              f.write("        ArrayList<String> p = new ArrayList<>();\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)\n")
-              f.write("            p.add(Manifest.permission.ACCESS_FINE_LOCATION);\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)\n")
-              f.write("            p.add(Manifest.permission.ACCESS_COARSE_LOCATION);\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)\n")
-              f.write("            p.add(Manifest.permission.CAMERA);\n")
-              f.write("        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED)\n")
-              f.write("            p.add(Manifest.permission.RECORD_AUDIO);\n")
-              f.write("        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)\n")
-              f.write("            p.add(Manifest.permission.POST_NOTIFICATIONS);\n")
-              f.write("        if (!p.isEmpty())\n")
-              f.write("            ActivityCompat.requestPermissions(this, p.toArray(new String[0]), PERMISSIONS_REQ);\n")
-              f.write("    }\n\n")
-              f.write("    @Override\n")
-              f.write("    protected void onActivityResult(int req, int res, Intent data) {\n")
-              f.write("        if (req == FILE_CHOOSER && fileCallback != null) {\n")
-              f.write("            Uri[] result = null;\n")
-              f.write("            if (res == RESULT_OK && data != null && data.getDataString() != null)\n")
-              f.write("                result = new Uri[]{Uri.parse(data.getDataString())};\n")
-              f.write("            fileCallback.onReceiveValue(result);\n")
-              f.write("            fileCallback = null;\n")
-              f.write("        }\n")
-              f.write("    }\n\n")
-              f.write("    @Override public void onBackPressed() { if (webView.canGoBack()) webView.goBack(); else super.onBackPressed(); }\n")
-              f.write("    @Override protected void onResume() { super.onResume(); webView.onResume(); }\n")
-              f.write("    @Override protected void onPause() { webView.onPause(); super.onPause(); }\n")
-              f.write("}\n")
-
-          with open(f"{prj}/app/src/main/AndroidManifest.xml",'w') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
-              f.write('<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n')
-              f.write('    <uses-permission android:name="android.permission.INTERNET"/>\n')
-              f.write('    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n')
-              f.write('    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n')
-              f.write('    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n')
-              f.write('    <uses-permission android:name="android.permission.CAMERA"/>\n')
-              f.write('    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n')
-              f.write('    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n')
-              f.write('    <uses-permission android:name="android.permission.VIBRATE"/>\n')
-              f.write('    <uses-feature android:name="android.hardware.camera" android:required="false"/>\n')
-              f.write('    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>\n')
-              f.write('    <uses-feature android:name="android.hardware.microphone" android:required="false"/>\n')
-              f.write('    <application\n')
-              f.write('        android:allowBackup="true"\n')
-              f.write('        android:icon="@mipmap/ic_launcher"\n')
-              f.write('        android:label="@string/app_name"\n')
-              f.write('        android:theme="@style/AppTheme"\n')
-              f.write('        android:usesCleartextTraffic="true"\n')
-              f.write('        android:supportsRtl="true"\n')
-              f.write('        android:hardwareAccelerated="true">\n')
-              f.write('        <activity\n')
-              f.write('            android:name=".MainActivity"\n')
-              f.write('            android:exported="true"\n')
-              f.write('            android:screenOrientation="portrait"\n')
-              f.write('            android:configChanges="orientation|screenSize|keyboard|keyboardHidden"\n')
-              f.write('            android:windowSoftInputMode="adjustResize">\n')
-              f.write('            <intent-filter>\n')
-              f.write('                <action android:name="android.intent.action.MAIN"/>\n')
-              f.write('                <category android:name="android.intent.category.LAUNCHER"/>\n')
-              f.write('            </intent-filter>\n')
-              f.write('        </activity>\n')
-              f.write('    </application>\n')
-              f.write('</manifest>\n')
-
-          with open(f"{prj}/app/src/main/res/values/strings.xml",'w') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
-              f.write('<resources>\n')
-              f.write('    <string name="app_name">SwiftDeal</string>\n')
-              f.write('</resources>\n')
-
-          with open(f"{prj}/app/src/main/res/values/colors.xml",'w') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
-              f.write('<resources>\n')
-              f.write('    <color name="colorPrimary">#FFF9D71C</color>\n')
-              f.write('    <color name="colorPrimaryDark">#FF000000</color>\n')
-              f.write('    <color name="backgroundColor">#FF000000</color>\n')
-              f.write('</resources>\n')
-
-          with open(f"{prj}/app/src/main/res/values/styles.xml",'w') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n')
-              f.write('<resources>\n')
-              f.write('    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">\n')
-              f.write('        <item name="colorPrimary">@color/colorPrimary</item>\n')
-              f.write('        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>\n')
-              f.write('        <item name="android:windowBackground">@color/backgroundColor</item>\n')
-              f.write('    </style>\n')
-              f.write('</resources>\n')
-
-          print(f"All files created successfully — versionCode={version_code} versionName={version_name}")
-
-      - name: Download and Resize Icons
+      - name: Auto-Bump Version Code
         run: |
-          curl -sL "https://swiftdeal-3cee9.web.app/icons/icon-512x512.png" -o /tmp/icon.png
-          sudo apt-get install -y imagemagick > /dev/null 2>&1
-          convert /tmp/icon.png -resize 48x48 $HOME/twa/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert /tmp/icon.png -resize 72x72 $HOME/twa/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert /tmp/icon.png -resize 96x96 $HOME/twa/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert /tmp/icon.png -resize 144x144 $HOME/twa/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert /tmp/icon.png -resize 192x192 $HOME/twa/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          echo "Icons created at all densities"
+          NEW_CODE=$((130 + ${{ github.run_number }}))
+          NEW_NAME="9.0.${NEW_CODE}"
+          echo "Setting versionCode=$NEW_CODE versionName=$NEW_NAME"
+          sed -i "s/versionCode [0-9]*/versionCode $NEW_CODE/" twa-source/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$NEW_NAME\"/" twa-source/app/build.gradle
+          grep -E "versionCode|versionName" twa-source/app/build.gradle
 
-      - name: Build AAB
+      - name: Verify Build Config
         run: |
-          cd $HOME/twa
-          gradle bundleRelease --no-daemon
+          echo "=== build.gradle check ==="
+          grep -E "minSdkVersion|targetSdkVersion|versionCode|versionName" twa-source/app/build.gradle
+          echo ""
+          echo "=== Should show NO billing dependency ==="
+          grep -i "billing" twa-source/app/build.gradle && echo "WARNING: billing still in gradle" || echo "Clean"
+          echo ""
+          echo "=== Manifest billing check (should be empty) ==="
+          grep -i "playbilling\|PaymentActivity\|PaymentService" twa-source/app/src/main/AndroidManifest.xml && echo "WARNING: billing still in manifest" || echo "Clean"
 
-      - name: Sign AAB
+      - name: Decode Keystore from Secret
         run: |
-          UNSIGNED=$(find $HOME/twa -name "*.aab" -type f | head -1)
-          echo "Found unsigned AAB at: $UNSIGNED"
-          jarsigner -keystore $GITHUB_WORKSPACE/signing.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEYSTORE_PASSWORD }}" -storetype PKCS12 -signedjar "$GITHUB_WORKSPACE/SwiftDeal-signed.aab" "$UNSIGNED" "my-key-alias"
-          jarsigner -verify "$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
-          echo "Signed AAB ready at: $GITHUB_WORKSPACE/SwiftDeal-signed.aab"
-          ls -la "$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+          mkdir -p twa-source/keystore-tmp
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > twa-source/keystore-tmp/release.keystore
+          ls -la twa-source/keystore-tmp/release.keystore
+          keytool -list -keystore twa-source/keystore-tmp/release.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>&1 | head -5 || echo "Keystore read failed"
 
-      - name: Verify Final AAB Label
+      - name: Make Gradlew Executable
+        run: chmod +x twa-source/gradlew
+
+      - name: Build Release AAB
+        working-directory: twa-source
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Locate Built AAB
+        id: locate
         run: |
-          cd $GITHUB_WORKSPACE
-          unzip -p SwiftDeal-signed.aab base/resources.pb | strings | grep -i "swiftdeal\|play.billing" | head -5
-          echo "If you see 'SwiftDeal' above and NO 'Play Billing', the build is correct."
+          AAB=$(find twa-source/app/build/outputs/bundle -name "*.aab" | head -1)
+          if [ -z "$AAB" ]; then
+            echo "ERROR: No AAB found"
+            find twa-source/app/build -type f \( -name "*.aab" -o -name "*.apk" \) 2>/dev/null
+            exit 1
+          fi
+          echo "Found AAB: $AAB"
+          echo "aab_path=$AAB" >> $GITHUB_OUTPUT
+          ls -la "$AAB"
 
-      - name: Upload AAB
+      - name: Sign AAB with jarsigner
+        run: |
+          UNSIGNED="${{ steps.locate.outputs.aab_path }}"
+          SIGNED="$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+          cp "$UNSIGNED" "$SIGNED"
+          jarsigner -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore twa-source/keystore-tmp/release.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            "$SIGNED" \
+            "${{ secrets.KEY_ALIAS }}"
+          jarsigner -verify "$SIGNED" && echo "AAB signed and verified"
+          ls -la "$SIGNED"
+
+      - name: Verify Final AAB
+        run: |
+          AAB="$GITHUB_WORKSPACE/SwiftDeal-signed.aab"
+          echo "=== AAB billing check (should be empty) ==="
+          unzip -l "$AAB" | grep -i "billing\|payment" && echo "WARNING: billing files in AAB" || echo "Clean — no billing files"
+          echo ""
+          echo "=== Final size ==="
+          ls -lh "$AAB"
+
+      - name: Cleanup Keystore
+        if: always()
+        run: rm -rf twa-source/keystore-tmp
+
+      - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SwiftDeal-AAB
