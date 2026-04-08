@@ -55,7 +55,7 @@ android {
     namespace "com.swiftdeal.app"
     defaultConfig {
         applicationId "com.swiftdeal.app"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 35
         versionCode 131
         versionName "9.0.0.1"
