@@ -97,10 +97,9 @@ jobs:
           ls -la "$AAB"
 
       - name: Sign AAB with jarsigner
-  run: |
-    cp twa-source/app/build/outputs/bundle/release/app-release.aab SwiftDeal-signed.aab
-    jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore signing.keystore -storepass android -keypass android SwiftDeal-signed.aab android
-    
+        run: |
+          cp twa-source/app/build/outputs/bundle/release/app-release.aab SwiftDeal-signed.aab
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore signing.keystore -storepass android -keypass android SwiftDeal-signed.aab android
 
       - name: Verify Final AAB
         run: |
@@ -121,3 +120,4 @@ jobs:
           name: SwiftDeal-AAB
           path: SwiftDeal-signed.aab
           retention-days: 30
+          
