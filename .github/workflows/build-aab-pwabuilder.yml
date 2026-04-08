@@ -99,7 +99,7 @@ jobs:
       - name: Sign AAB with jarsigner
         run: |
           cp twa-source/app/build/outputs/bundle/release/app-release.aab SwiftDeal-signed.aab
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore signing.keystore -storepass android -keypass android SwiftDeal-signed.aab android
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore signing.keystore -storepass fc8OXEFaAIg5 -keypass fc8OXEFaAIg5 SwiftDeal-signed.aab my-key-alias
 
       - name: Verify Final AAB
         run: |
