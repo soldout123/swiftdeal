@@ -213,3 +213,7 @@ dependencies {
         implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.0-alpha02'
     
 }
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:billing:2.7.0-alpha02'
+}
