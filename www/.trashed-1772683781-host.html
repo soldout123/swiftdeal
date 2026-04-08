@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>SwiftDeal - Admin Control Panel</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #0a0a0a; 
+            margin: 0;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Login Gate */
+        #login-gate { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            text-align: center;
+            padding: 20px;
+        }
+        #login-gate h1 { 
+            color: #f9d71c; 
+            font-size: 28px; 
+            margin-bottom: 10px;
+        }
+        #login-gate p { 
+            color: #888; 
+            margin-bottom: 30px;
+        }
+        .login-btn { 
+            padding: 15px 40px; 
+            background: #f9d71c; 
+            color: #000; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .login-btn:active { background: #e0c200; }
+        
+        /* Admin Content */
+        #admin-content { display: none; }
+        
+        /* Header */
+        .header {
+            background: #000;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid #f9d71c;
+        }
+        .header h1 { 
+            color: #f9d71c; 
+            font-size: 20px; 
+            margin: 0;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .header-btn {
+            background: #222;
+            border: none;
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .header-btn.logout { background: #dc3545; }
+        
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #f9d71c;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: #111;
+            padding: 0 15px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab {
+            padding: 15px 20px;
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+        .tab.active {
+            color: #f9d71c;
+            border-bottom-color: #f9d71c;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 15px;
+        }
+        .tab-content.active { display: block; }
+        
+        /* Cards */
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: #222;
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-body {
+            padding: 0;
+        }
+        
+        /* Driver List */
+        .driver-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            gap: 15px;
+        }
+        .driver-item:last-child { border-bottom: none; }
+        .driver-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .driver-avatar.online { background: #28a745; }
+        .driver-avatar.offline { background: #444; }
+        .driver-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .driver-name {
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .driver-meta {
+            font-size: 12px;
+            color: #888;
+            margin-top: 3px;
+        }
+        .driver-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #333;
+            color: #888;
+        }
+        .driver-status.online { background: #28a745; color: white; }
+        .driver-status.unverified { background: #ffc107; color: #000; }
+        .driver-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .driver-debt {
+            font-size: 14px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .driver-debt.clear { color: #28a745; }
+        
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-verify { background: #28a745; color: white; }
+        .btn-verified { background: #444; color: #888; }
+        .btn-clear { background: #17a2b8; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 11px; }
+        
+        /* Active Rides */
+        .ride-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+        }
+        .ride-item:last-child { border-bottom: none; }
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .ride-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        .ride-status.pending { background: #ffc107; color: #000; }
+        .ride-status.accepted { background: #28a745; color: white; }
+        .ride-status.in_progress { background: #17a2b8; color: white; }
+        .ride-status.completed { background: #6c757d; color: white; }
+        .ride-locations {
+            font-size: 13px;
+            color: #aaa;
+        }
+        .ride-locations div {
+            margin-bottom: 5px;
+        }
+        .ride-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        .ride-fare {
+            background: #f9d71c;
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        
+        /* Trip Logs Table */
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+        }
+        th {
+            background: #222;
+            color: #f9d71c;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        /* Search */
+        .search-box {
+            padding: 15px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 14px;
+        }
+        .search-input::placeholder { color: #666; }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal {
+            background: #1a1a1a;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 18px; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 14px;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .driver-item { flex-wrap: wrap; }
+            .driver-actions { 
+                width: 100%; 
+                flex-direction: row; 
+                margin-top: 10px;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Gate -->
+<div id="login-gate">
+    <h1>⚡ SwiftDeal Admin</h1>
+    <p>Master Control Panel</p>
+    <button class="login-btn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+    </button>
+</div>
+
+<!-- Admin Content -->
+<div id="admin-content">
+    <!-- Header -->
+    <div class="header">
+        <h1>⚡ Admin Panel</h1>
+        <div class="header-actions">
+            <button class="header-btn" onclick="refreshData()">🔄 Refresh</button>
+            <button class="header-btn logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="statDrivers">0</div>
+            <div class="stat-label">Total Drivers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statOnline">0</div>
+            <div class="stat-label">Online Now</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statRides">0</div>
+            <div class="stat-label">Active Rides</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statDebt">$0</div>
+            <div class="stat-label">Total Debt</div>
+        </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('drivers')">👤 Drivers</div>
+        <div class="tab" onclick="switchTab('rides')">🚗 Active Rides</div>
+        <div class="tab" onclick="switchTab('logs')">📋 Trip Logs</div>
+        <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+    </div>
+    
+    <!-- Drivers Tab -->
+    <div id="drivers-tab" class="tab-content active">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search drivers..." oninput="filterDrivers(this.value)">
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span>All Drivers</span>
+                <span id="driverCount">0</span>
+            </div>
+            <div class="card-body" id="driversContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">👤</div>
+                    <p>No drivers registered yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Rides Tab -->
+    <div id="rides-tab" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span>Active Rides</span>
+                <span id="rideCount">0</span>
+            </div>
+            <div class="card-body" id="ridesContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚗</div>
+                    <p>No active rides</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trip Logs Tab -->
+    <div id="logs-tab" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span>Trip History</span>
+                <button class="btn btn-sm btn-clear" onclick="exportLogs()">📥 Export</button>
+            </div>
+            <div class="card-body">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Driver</th>
+                                <th>Passenger</th>
+                                <th>Route</th>
+                                <th>Fare</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align:center; color:#666; padding:30px;">
+                                    No trip logs yet
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Tab -->
+    <div id="settings-tab" class="tab-content">
+        <div class="card">
+            <div class="card-header">Commission Settings</div>
+            <div class="card-body" style="padding:20px;">
+                <div class="form-group">
+                    <label>Commission Rate (%)</label>
+                    <input type="number" id="commissionRate" value="15" min="0" max="50">
+                </div>
+                <div class="form-group">
+                    <label>Debt Lock Threshold (JMD)</label>
+                    <input type="number" id="debtThreshold" value="5000" min="0">
+                </div>
+                <button class="btn btn-verify" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">Danger Zone</div>
+            <div class="card-body" style="padding:20px;">
+                <p style="color:#888; font-size:13px; margin-bottom:15px;">
+                    Clear all pending ride requests
+                </p>
+                <button class="btn btn-danger" onclick="clearAllPendingRides()">
+                    Clear Pending Rides
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Debt Edit Modal -->
+<div class="modal-overlay" id="debtModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Edit Driver Balance</h3>
+            <button class="modal-close" onclick="closeDebtModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="debtDriverName" style="color:#aaa; margin-bottom:15px;"></p>
+            <div class="form-group">
+                <label>Current Balance: <span id="currentBalance" style="color:#dc3545;">$0</span></label>
+                <input type="number" id="newBalance" placeholder="Enter new balance">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-clear" style="flex:1;" onclick="setBalance(0)">Clear to $0</button>
+                <button class="btn btn-danger" style="flex:1;" onclick="addToBalance(1000)">+$1000</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" style="background:#444;" onclick="closeDebtModal()">Cancel</button>
+            <button class="btn btn-verify" onclick="saveBalance()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, update, remove, get, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCmHg4nOAXC-JaW2wPesh6VJY7v1twiMw4",
+        authDomain: "swiftdeal-3cee9.firebaseapp.com",
+        databaseURL: "https://swiftdeal-3cee9-default-rtdb.firebaseio.com",
+        projectId: "swiftdeal-3cee9",
+        storageBucket: "swiftdeal-3cee9.firebasestorage.app",
+        messagingSenderId: "626252184385",
+        appId: "1:626252184385:web:b525e1b382c72ccdf43fc0"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    
+    // Authorized admin emails
+    const ADMIN_EMAILS = ['linton757@gmail.com'];
+    
+    // App State
+    let allDrivers = {};
+    let allRides = {};
+    let allLogs = [];
+    let selectedDriverId = null;
+    
+    // Auth
+    window.loginWithGoogle = () => {
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                if (!ADMIN_EMAILS.includes(result.user.email)) {
+                    alert("Access denied. You are not an authorized admin.");
+                    signOut(auth);
+                }
+            })
+            .catch((error) => {
+                console.error("Login error:", error);
+                alert("Login failed. Please try again.");
+            });
+    };
+    
+    window.logout = () => {
+        if (confirm("Sign out?")) {
+            signOut(auth).then(() => location.reload());
+        }
+    };
+    
+    onAuthStateChanged(auth, (user) => {
+        if (user && ADMIN_EMAILS.includes(user.email)) {
+            document.getElementById('login-gate').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+            loadAllData();
+        } else {
+            document.getElementById('login-gate').style.display = 'flex';
+            document.getElementById('admin-content').style.display = 'none';
+        }
+    });
+    
+    // Load all data
+    function loadAllData() {
+        loadDrivers();
+        loadRides();
+        loadTripLogs();
+    }
+    
+    window.refreshData = loadAllData;
+    
+    // Load Drivers
+    function loadDrivers() {
+        const driversRef = ref(db, 'driverAccounts');
+        
+        onValue(driversRef, (snapshot) => {
+            allDrivers = snapshot.val() || {};
+            renderDrivers();
+            updateStats();
+        });
+    }
+    
+    // Render Drivers List
+    function renderDrivers(filter = '') {
+        const container = document.getElementById('driversContainer');
+        const entries = Object.entries(allDrivers);
+        
+        if (entries.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">👤</div>
+                    <p>No drivers registered yet</p>
+                </div>
+            `;
+            document.getElementById('driverCount').textContent = '0';
+            return;
+        }
+        
+        // Filter drivers
+        const filtered = entries.filter(([id, driver]) => {
+            if (!filter) return true;
+            const search = filter.toLowerCase();
+            return driver.name?.toLowerCase().includes(search) || 
+                   driver.phone?.includes(search) ||
+                   driver.vehicle?.toLowerCase().includes(search);
+        });
+        
+        document.getElementById('driverCount').textContent = filtered.length;
+        
+        container.innerHTML = filtered.map(([id, driver]) => {
+            const isOnline = driver.status === 'online';
+            const isVerified = driver.verified;
+            const debt = driver.balance || 0;
+            
+            return `
+                <div class="driver-item">
+                    <div class="driver-avatar ${isOnline ? 'online' : 'offline'}">
+                        ${isOnline ? '🟢' : '⚪'}
+                    </div>
+                    <div class="driver-info">
+                        <div class="driver-name">${driver.name || 'Unknown'}</div>
+                        <div class="driver-meta">
+                            📞 ${driver.phone || 'N/A'} • 🚗 ${driver.vehicle || 'N/A'}
+                        </div>
+                        <div class="driver-meta">
+                            Trips: ${driver.trips || 0} • Rating: ⭐ ${(driver.rating || 5).toFixed(1)}
+                        </div>
+                    </div>
+                    <div class="driver-actions">
+                        <div class="driver-debt ${debt === 0 ? 'clear' : ''}">
+                            ${debt === 0 ? '✓ Clear' : '$' + debt + ' owed'}
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn ${isVerified ? 'btn-verified' : 'btn-verify'} btn-sm" 
+                                onclick="toggleVerify('${id}', ${isVerified})">
+                                ${isVerified ? '✓ Verified' : 'Verify'}
+                            </button>
+                            <button class="btn btn-clear btn-sm" onclick="openDebtModal('${id}')">
+                                Edit Debt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    window.filterDrivers = (value) => renderDrivers(value);
+    
+    // Toggle driver verification
+    window.toggleVerify = (id, current) => {
+        const newStatus = !current;
+        update(ref(db, `driverAccounts/${id}`), { verified: newStatus })
+            .then(() => {
+                console.log(`Driver ${id} verification: ${newStatus}`);
+            })
+            .catch((error) => {
+                console.error("Verify error:", error);
+                alert("Error updating verification status.");
+            });
+    };
+    
+    // Debt Modal
+    window.openDebtModal = (driverId) => {
+        selectedDriverId = driverId;
+        const driver = allDrivers[driverId];
+        
+        if (!driver) return;
+        
+        document.getElementById('debtDriverName').textContent = driver.name;
+        document.getElementById('currentBalance').textContent = '$' + (driver.balance || 0);
+        document.getElementById('newBalance').value = driver.balance || 0;
+        document.getElementById('debtModal').style.display = 'flex';
+    };
+    
+    window.closeDebtModal = () => {
+        document.getElementById('debtModal').style.display = 'none';
+        selectedDriverId = null;
+    };
+    
+    window.setBalance = (amount) => {
+        document.getElementById('newBalance').value = amount;
+    };
+    
+    window.addToBalance = (amount) => {
+        const current = parseInt(document.getElementById('newBalance').value) || 0;
+        document.getElementById('newBalance').value = current + amount;
+    };
+    
+    window.saveBalance = () => {
+        if (!selectedDriverId) return;
+        
+        const newBalance = parseInt(document.getElementById('newBalance').value) || 0;
+        
+        update(ref(db, `driverAccounts/${selectedDriverId}`), { balance: newBalance })
+            .then(() => {
+                alert("Balance updated successfully!");
+                closeDebtModal();
+            })
+            .catch((error) => {
+                console.error("Update balance error:", error);
+                alert("Error updating balance.");
+            });
+    };
+    
+    // Load Active Rides
+    function loadRides() {
+        const ridesRef = ref(db, 'offers');
+        
+        onValue(ridesRef, (snapshot) => {
+            allRides = snapshot.val() || {};
+            renderRides();
+            updateStats();
+        });
+    }
+    
+    // Render Rides
+    function renderRides() {
+        const container = document.getElementById('ridesContainer');
+        const entries = Object.entries(allRides);
+        
+        // Filter out completed/cancelled rides older than 24h
+        const activeRides = entries.filter(([id, ride]) => {
+            if (['pending', 'accepted', 'arriving', 'in_progress'].includes(ride.status)) {
+                return true;
+            }
+            // Show recently completed rides
+            const age = Date.now() - (ride.completedAt || ride.timestamp);
+            return age < 3600000; // 1 hour
+        });
+        
+        document.getElementById('rideCount').textContent = activeRides.length;
+        
+        if (activeRides.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚗</div>
+                    <p>No active rides</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort by timestamp (newest first)
+        activeRides.sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+        
+        container.innerHTML = activeRides.map(([id, ride]) => {
+            const statusClass = ride.status?.replace('_', '-') || 'pending';
+            const statusText = {
+                'pending': '⏳ Pending',
+                'accepted': '✅ Accepted',
+                'arriving': '🚗 Arriving',
+                'in_progress': '🛣️ In Progress',
+                'completed': '✓ Completed',
+                'cancelled': '✗ Cancelled'
+            }[ride.status] || ride.status;
+            
+            return `
+                <div class="ride-item">
+                    <div class="ride-header">
+                        <span><strong>${ride.name || 'Unknown'}</strong></span>
+                        <span class="ride-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="ride-locations">
+                        <div>📍 ${ride.pickup || 'N/A'}</div>
+                        <div>🏁 ${ride.destination || 'N/A'}</div>
+                    </div>
+                    <div class="ride-meta">
+                        <span>${ride.driverName ? '🚗 ' + ride.driverName : 'No driver yet'}</span>
+                        <span class="ride-fare">$${ride.offer || 0} JMD</span>
+                    </div>
+                    ${ride.status === 'pending' ? `
+                        <button class="btn btn-danger btn-sm" style="margin-top:10px;" 
+                            onclick="cancelRide('${id}')">Cancel Request</button>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Cancel a ride
+    window.cancelRide = (rideId) => {
+        if (!confirm("Cancel this ride request?")) return;
+        
+        update(ref(db, `offers/${rideId}`), { 
+            status: 'cancelled',
+            cancelledAt: Date.now(),
+            cancelledBy: 'admin'
+        });
+    };
+    
+    // Clear all pending rides
+    window.clearAllPendingRides = () => {
+        if (!confirm("Clear ALL pending ride requests? This cannot be undone.")) return;
+        
+        const pending = Object.entries(allRides).filter(([id, ride]) => ride.status === 'pending');
+        
+        if (pending.length === 0) {
+            alert("No pending rides to clear.");
+            return;
+        }
+        
+        Promise.all(pending.map(([id]) => 
+            update(ref(db, `offers/${id}`), { 
+                status: 'cancelled',
+                cancelledAt: Date.now(),
+                cancelledBy: 'admin'
+            })
+        )).then(() => {
+            alert(`Cleared ${pending.length} pending rides.`);
+        });
+    };
+    
+    // Load Trip Logs
+    function loadTripLogs() {
+        const logsRef = ref(db, 'tripLogs');
+        
+        onValue(logsRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            allLogs = Object.entries(data).map(([id, log]) => ({ id, ...log }));
+            allLogs.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+            renderLogs();
+        });
+    }
+    
+    // Render Logs
+    function renderLogs() {
+        const tbody = document.getElementById('logsTableBody');
+        
+        if (allLogs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center; color:#666; padding:30px;">
+                        No trip logs yet
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = allLogs.slice(0, 100).map(log => {
+            const date = log.completedAt ? new Date(log.completedAt).toLocaleString() : 'N/A';
+            return `
+                <tr>
+                    <td>${date}</td>
+                    <td>${log.driverName || 'Unknown'}</td>
+                    <td>${log.passenger || 'Unknown'}</td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">
+                        ${log.pickup || ''} → ${log.destination || ''}
+                    </td>
+                    <td>$${log.fare || 0}</td>
+                    <td style="color:#dc3545;">$${log.commission || 0}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // Export logs to CSV
+    window.exportLogs = () => {
+        if (allLogs.length === 0) {
+            alert("No logs to export.");
+            return;
+        }
+        
+        const csv = [
+            ['Date', 'Driver', 'Passenger', 'Pickup', 'Destination', 'Fare', 'Commission'].join(','),
+            ...allLogs.map(log => [
+                log.completedAt ? new Date(log.completedAt).toISOString() : '',
+                `"${log.driverName || ''}"`,
+                `"${log.passenger || ''}"`,
+                `"${log.pickup || ''}"`,
+                `"${log.destination || ''}"`,
+                log.fare || 0,
+                log.commission || 0
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `swiftdeal-logs-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    // Update Stats
+    function updateStats() {
+        const driverEntries = Object.entries(allDrivers);
+        const rideEntries = Object.entries(allRides);
+        
+        const totalDrivers = driverEntries.length;
+        const onlineDrivers = driverEntries.filter(([id, d]) => d.status === 'online').length;
+        const activeRides = rideEntries.filter(([id, r]) => 
+            ['pending', 'accepted', 'arriving', 'in_progress'].includes(r.status)
+        ).length;
+        const totalDebt = driverEntries.reduce((sum, [id, d]) => sum + (d.balance || 0), 0);
+        
+        document.getElementById('statDrivers').textContent = totalDrivers;
+        document.getElementById('statOnline').textContent = onlineDrivers;
+        document.getElementById('statRides').textContent = activeRides;
+        document.getElementById('statDebt').textContent = '$' + totalDebt;
+    }
+    
+    // Tab Switching
+    window.switchTab = (tabName) => {
+        // Update tab buttons
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.textContent.toLowerCase().includes(tabName) || 
+                tab.onclick.toString().includes(tabName)) {
+                tab.classList.add('active');
+            }
+        });
+        
+        // Fix: properly activate clicked tab
+        event.target.classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    };
+    
+    // Settings
+    window.saveSettings = () => {
+        const commission = document.getElementById('commissionRate').value;
+        const threshold = document.getElementById('debtThreshold').value;
+        
+        // Save to Firebase settings
+        update(ref(db, 'settings'), {
+            commissionRate: parseInt(commission),
+            debtThreshold: parseInt(threshold)
+        }).then(() => {
+            alert("Settings saved!");
+        });
+    };
+</script>
+
+</body>
+</html>

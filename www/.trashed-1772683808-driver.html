@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>SwiftDeal - Driver & Rental Partner</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; padding: 0; 
+            background: #0a0a0a; 
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header { 
+            background: #000; 
+            padding: 12px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid #f9d71c;
+        }
+        .header h1 { margin: 0; font-size: 18px; color: #f9d71c; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .online-indicator.online { background: #28a745; }
+        .menu-btn { 
+            background: none; 
+            border: none; 
+            color: #f9d71c; 
+            font-size: 24px; 
+            cursor: pointer;
+        }
+        
+        /* Tabs */
+        .main-tabs {
+            display: flex;
+            background: #111;
+        }
+        .main-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .main-tab.active {
+            color: #f9d71c;
+            border-bottom-color: #f9d71c;
+        }
+        
+        /* Overlays */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 5000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .overlay.active { display: flex; }
+        .overlay-box {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid #f9d71c;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .overlay-box h2 { color: #f9d71c; margin: 0 0 20px; font-size: 20px; text-align: center; }
+        
+        /* Side Navigation */
+        .sidenav { 
+            height: 100%; 
+            width: 0; 
+            position: fixed; 
+            z-index: 6000; 
+            top: 0; 
+            left: 0; 
+            background: #000; 
+            overflow-x: hidden; 
+            transition: width 0.3s ease; 
+            padding-top: 60px;
+        }
+        .sidenav a { 
+            padding: 15px 25px; 
+            text-decoration: none; 
+            font-size: 14px; 
+            color: #ccc; 
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #1a1a1a; 
+        }
+        .sidenav .closebtn { 
+            position: absolute; 
+            top: 10px; 
+            right: 15px; 
+            font-size: 32px; 
+            color: #f9d71c; 
+            cursor: pointer;
+        }
+        .sidenav-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 5999;
+            display: none;
+        }
+        .sidenav-header {
+            padding: 20px;
+            border-bottom: 1px solid #222;
+        }
+        .sidenav-header h3 { color: #f9d71c; margin: 0 0 5px; font-size: 16px; }
+        .sidenav-header p { color: #666; margin: 0; font-size: 12px; }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 15px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        .stat-card.highlight { border-color: #f9d71c; }
+        .stat-card.danger { border-color: #dc3545; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #f9d71c; }
+        .stat-value.danger { color: #dc3545; }
+        .stat-value.success { color: #28a745; }
+        .stat-label { font-size: 11px; color: #888; margin-top: 5px; }
+        
+        /* Online Toggle */
+        .online-toggle-card {
+            background: #1a1a1a;
+            margin: 0 15px 15px;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-info h3 { margin: 0; font-size: 16px; }
+        .toggle-info p { margin: 5px 0 0; font-size: 12px; color: #888; }
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 32px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #333;
+            transition: 0.3s;
+            border-radius: 32px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #28a745; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(28px); }
+        
+        /* Lynk Balance Card */
+        .lynk-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 15px 15px;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .lynk-card h4 { margin: 0; font-size: 12px; opacity: 0.8; }
+        .lynk-card .balance { font-size: 32px; font-weight: bold; margin: 10px 0; }
+        .lynk-card .actions { display: flex; gap: 10px; margin-top: 15px; }
+        .lynk-card .btn { 
+            flex: 1; 
+            background: rgba(255,255,255,0.2); 
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        /* Map */
+        .map-container {
+            margin: 0 15px 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 180px;
+        }
+        #map { width: 100%; height: 100%; }
+        
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 15px 10px;
+        }
+        .section-header h3 { margin: 0; font-size: 16px; color: #f9d71c; }
+        .section-header .badge {
+            background: #dc3545;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        /* Request Cards */
+        .request-card {
+            background: #1a1a1a;
+            margin: 0 15px 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        .request-card.locked { opacity: 0.7; }
+        .request-card-header {
+            background: #222;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .request-type {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .request-type-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .request-type-badge.ride { background: #17a2b8; }
+        .request-type-badge.courier { background: #fd7e14; }
+        .request-type-badge.hire { background: #6f42c1; }
+        .request-offer {
+            background: #f9d71c;
+            color: #000;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .request-card-body { padding: 15px; }
+        .request-preview {
+            color: #888;
+            font-size: 13px;
+        }
+        .request-preview div { margin-bottom: 8px; }
+        .request-full { display: none; }
+        .request-card.unlocked .request-full { display: block; }
+        .request-card.unlocked .request-preview { display: none; }
+        .request-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+        }
+        .request-detail:last-child { border-bottom: none; }
+        .request-detail .label { color: #888; }
+        .request-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+            color: #666;
+        }
+        .request-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        /* Unlock Prompt */
+        .unlock-prompt {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            border: 2px dashed #f9d71c;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .unlock-prompt h4 { color: #f9d71c; margin: 0 0 10px; font-size: 14px; }
+        .unlock-prompt p { color: #888; font-size: 12px; margin: 0 0 15px; }
+        .unlock-cost {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f9d71c;
+            margin-bottom: 15px;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: #f9d71c; color: #000; }
+        .btn-secondary { background: #333; color: #fff; }
+        .btn-success { background: #28a745; color: #fff; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .btn-outline { background: transparent; border: 2px solid #f9d71c; color: #f9d71c; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-sm { padding: 10px 16px; font-size: 12px; }
+        
+        /* Active Trip Card */
+        .active-trip-card {
+            background: linear-gradient(135deg, #1a3320 0%, #0d1f12 100%);
+            border: 2px solid #28a745;
+            margin: 0 15px 15px;
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+        }
+        .active-trip-card.active { display: block; }
+        .active-trip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .active-trip-header h3 { margin: 0; color: #28a745; font-size: 16px; }
+        .trip-status-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+        .trip-progress {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            position: relative;
+        }
+        .trip-progress::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15%;
+            right: 15%;
+            height: 3px;
+            background: #333;
+        }
+        .progress-step {
+            text-align: center;
+            z-index: 1;
+        }
+        .progress-step .step-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #333;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .progress-step.active .step-dot { background: #28a745; }
+        .progress-step.completed .step-dot { background: #f9d71c; color: #000; }
+        .progress-step .step-label { font-size: 10px; color: #888; }
+        .trip-passenger {
+            background: #111;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .trip-passenger h4 { margin: 0 0 10px; font-size: 14px; }
+        .trip-passenger p { margin: 5px 0; font-size: 13px; color: #888; }
+        .trip-actions { display: flex; gap: 10px; }
+        .trip-actions .btn { flex: 1; }
+        
+        /* Rental Tab Content */
+        .rental-section { padding: 15px; }
+        .rental-section h3 { color: #f9d71c; margin: 0 0 15px; font-size: 16px; }
+        
+        /* My Vehicles */
+        .my-vehicle-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+        .my-vehicle-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        .my-vehicle-card-body { padding: 15px; }
+        .my-vehicle-card h4 { margin: 0 0 5px; font-size: 15px; }
+        .my-vehicle-card p { margin: 0; font-size: 12px; color: #888; }
+        .my-vehicle-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+        .my-vehicle-status.available { background: #28a745; }
+        .my-vehicle-status.rented { background: #17a2b8; }
+        .my-vehicle-status.unavailable { background: #666; }
+        .my-vehicle-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .my-vehicle-actions .btn { flex: 1; padding: 8px; font-size: 12px; }
+        
+        /* Add Vehicle Form */
+        .add-vehicle-form { padding: 15px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-size: 13px; 
+            color: #888;
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 14px; 
+            border: 1px solid #333; 
+            border-radius: 10px; 
+            font-size: 15px; 
+            background: #1a1a1a;
+            color: #fff;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #f9d71c;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        
+        /* Image Upload */
+        .image-upload {
+            border: 2px dashed #333;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .image-upload:hover { border-color: #f9d71c; }
+        .image-upload-icon { font-size: 40px; margin-bottom: 10px; }
+        .image-upload p { margin: 0; color: #888; font-size: 13px; }
+        .image-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .image-preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        /* Verification Banner */
+        .verification-banner {
+            background: linear-gradient(135deg, #332700 0%, #1a1400 100%);
+            border: 1px solid #f9d71c;
+            margin: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+        }
+        .verification-banner.active { display: block; }
+        .verification-banner h4 { color: #f9d71c; margin: 0 0 5px; font-size: 14px; }
+        .verification-banner p { color: #888; margin: 0; font-size: 12px; }
+        
+        /* Debt Lock Banner */
+        .debt-lock-banner {
+            background: linear-gradient(135deg, #3d1515 0%, #1a0a0a 100%);
+            border: 2px solid #dc3545;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+        }
+        .debt-lock-banner.active { display: block; }
+        .debt-lock-banner h4 { color: #dc3545; margin: 0 0 10px; }
+        .debt-lock-banner .amount { font-size: 32px; color: #f9d71c; font-weight: bold; margin: 15px 0; }
+        .debt-lock-banner p { color: #888; font-size: 12px; margin: 0 0 15px; }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #555;
+        }
+        .empty-state-icon { font-size: 50px; margin-bottom: 15px; }
+        
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Tab Content */
+        .tab-content { display: none; flex: 1; overflow-y: auto; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="overlay active" id="loadingOverlay" style="display:flex;">
+    <div style="text-align:center;">
+        <div class="spinner" style="width:40px;height:40px;border-width:4px;margin:0 auto 15px;"></div>
+        <p style="color:#f9d71c;">Loading...</p>
+    </div>
+</div>
+
+<!-- Auth Overlay -->
+<div class="overlay" id="authOverlay">
+    <div class="overlay-box">
+        <h2>⚡ SwiftDeal Driver</h2>
+        
+        <!-- Sign In Tab -->
+        <div id="signInSection">
+            <p style="color:#888;text-align:center;margin-bottom:20px;">Sign in with your phone number</p>
+            <div class="input-group">
+                <label>Phone Number</label>
+                <input type="tel" id="signInPhone" placeholder="+1 234 567 8900">
+            </div>
+            <button class="btn btn-primary" onclick="handleDriverSignIn()">SIGN IN</button>
+            <p style="text-align:center;margin-top:15px;color:#888;">
+                New driver? <a href="#" onclick="showRegisterForm()" style="color:#f9d71c;">Create Account</a>
+            </p>
+        </div>
+        
+        <!-- Register Tab -->
+        <div id="registerSection" style="display:none;">
+            <p style="color:#888;text-align:center;margin-bottom:20px;">Register to start earning</p>
+            <div class="input-group">
+                <label>Full Name *</label>
+                <input type="text" id="authName" placeholder="Enter your full name">
+            </div>
+            <div class="input-group">
+                <label>Phone Number *</label>
+                <input type="tel" id="authPhone" placeholder="+1 234 567 8900">
+            </div>
+            <div class="input-group">
+                <label>Vehicle Type *</label>
+                <select id="authVehicleType">
+                    <option value="">Select vehicle type</option>
+                    <option value="car">🚗 Car</option>
+                    <option value="suv">🚙 SUV</option>
+                    <option value="van">🚐 Van</option>
+                    <option value="truck">🚛 Truck</option>
+                    <option value="motorcycle">🏍️ Motorcycle</option>
+                    <option value="bicycle">🚲 Bicycle</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Vehicle Details *</label>
+                <input type="text" id="authVehicle" placeholder="e.g., Toyota Corolla 2020 - White">
+            </div>
+            <div class="input-group">
+                <label>License Plate *</label>
+                <input type="text" id="authPlate" placeholder="ABC 1234">
+            </div>
+            <div class="input-group">
+                <label>Lynk Account Number (for payments)</label>
+                <input type="text" id="authLynk" placeholder="Your Lynk number">
+            </div>
+            <button class="btn btn-primary" onclick="handleDriverAuth()">CREATE ACCOUNT</button>
+            <p style="text-align:center;margin-top:15px;color:#888;">
+                Already registered? <a href="#" onclick="showSignInForm()" style="color:#f9d71c;">Sign In</a>
+            </p>
+        </div>
+        
+        <p style="text-align:center;margin-top:15px;border-top:1px solid #333;padding-top:15px;">
+            <a href="passenger.html" style="color:#f9d71c;">← Back to Passenger Mode</a>
+        </p>
+    </div>
+</div>
+
+<!-- Top Up Lynk Overlay -->
+<div class="overlay" id="topUpOverlay">
+    <div class="overlay-box">
+        <h2>💳 Top Up Lynk Balance</h2>
+        <p style="color:#888;text-align:center;margin-bottom:20px;">Add funds to unlock ride requests</p>
+        <div class="input-group">
+            <label>Amount</label>
+            <input type="number" id="topUpAmount" placeholder="Enter amount" value="500">
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <button class="btn btn-secondary btn-sm" onclick="setTopUpAmount(200)">$200</button>
+            <button class="btn btn-secondary btn-sm" onclick="setTopUpAmount(500)">$500</button>
+            <button class="btn btn-secondary btn-sm" onclick="setTopUpAmount(1000)">$1000</button>
+        </div>
+        <p style="font-size:12px;color:#888;margin-bottom:15px;">
+            Payment will be processed via Lynk. Make sure your Lynk account has sufficient balance.
+        </p>
+        <button class="btn btn-primary" onclick="processTopUp()">TOP UP NOW</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="closeTopUp()">Cancel</button>
+    </div>
+</div>
+
+<!-- Unlock Request Overlay -->
+<div class="overlay" id="unlockOverlay">
+    <div class="overlay-box">
+        <h2>🔓 Unlock Request Details</h2>
+        <div id="unlockRequestPreview" style="background:#111;padding:15px;border-radius:10px;margin-bottom:20px;">
+            <!-- Preview will be inserted here -->
+        </div>
+        <div class="unlock-prompt" style="border:none;padding:0;">
+            <p style="color:#888;margin-bottom:10px;">Pay a small fee to see full details including passenger contact</p>
+            <div class="unlock-cost" id="unlockCost">$50</div>
+            <p style="font-size:11px;color:#666;margin-bottom:15px;">
+                Fee will be deducted from your Lynk balance.<br>
+                Current balance: <span id="unlockCurrentBalance">$0</span>
+            </p>
+        </div>
+        <button class="btn btn-primary" id="unlockBtn" onclick="confirmUnlock()">
+            🔓 UNLOCK & VIEW DETAILS
+        </button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="closeUnlock()">Cancel</button>
+    </div>
+</div>
+
+<!-- Side Navigation -->
+<div class="sidenav-overlay" id="sidenavOverlay" onclick="closeNav()"></div>
+<div id="mySidenav" class="sidenav">
+    <span class="closebtn" onclick="closeNav()">×</span>
+    <div class="sidenav-header">
+        <h3 id="navDriverName">Driver</h3>
+        <p id="navDriverVehicle">Vehicle</p>
+    </div>
+    <a href="passenger.html">🔄 Switch to Passenger Mode</a>
+    <a onclick="showEarnings()">💰 Earnings History</a>
+    <a onclick="showTripHistory()">📋 Trip History</a>
+    <a onclick="showDocuments()">📄 Documents</a>
+    <a onclick="showSettings()">⚙️ Settings</a>
+    <a onclick="showSupport()">📞 Support</a>
+    <a onclick="logout()" style="color:#dc3545;">🚪 Sign Out</a>
+</div>
+
+<!-- Main Container -->
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <button class="menu-btn" onclick="openNav()">☰</button>
+        <h1>⚡ Driver Mode</h1>
+        <div class="header-right">
+            <div class="online-indicator" id="onlineIndicator"></div>
+        </div>
+    </div>
+    
+    <!-- Main Tabs -->
+    <div class="main-tabs">
+        <div class="main-tab active" data-tab="drive" onclick="switchTab('drive')">🚗 Drive</div>
+        <div class="main-tab" data-tab="rentals" onclick="switchTab('rentals')">🔑 My Rentals</div>
+    </div>
+    
+    <!-- DRIVE TAB -->
+    <div class="tab-content active" id="driveTab">
+        <!-- Verification Banner -->
+        <div class="verification-banner" id="verificationBanner">
+            <h4>⏳ Verification Pending</h4>
+            <p>Your account is being reviewed. You can browse requests but cannot accept until verified.</p>
+        </div>
+        
+        <!-- Debt Lock Banner -->
+        <div class="debt-lock-banner" id="debtLockBanner">
+            <h4>⚠️ Account Locked</h4>
+            <p>Clear your outstanding balance to continue accepting rides</p>
+            <div class="amount">$<span id="debtAmount">0</span></div>
+            <button class="btn btn-primary btn-sm" onclick="contactAdminDebt()">Contact Admin</button>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <div class="stat-value success">$<span id="todayEarnings">0</span></div>
+                <div class="stat-label">Today's Earnings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><span id="todayTrips">0</span></div>
+                <div class="stat-label">Trips Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">⭐ <span id="driverRating">5.0</span></div>
+                <div class="stat-label">Rating</div>
+            </div>
+            <div class="stat-card" id="debtCard">
+                <div class="stat-value danger">$<span id="balanceDue">0</span></div>
+                <div class="stat-label">Commission Due</div>
+            </div>
+        </div>
+        
+        <!-- Online Toggle -->
+        <div class="online-toggle-card">
+            <div class="toggle-info">
+                <h3 id="toggleLabel">Go Online</h3>
+                <p id="toggleSubtext">Start receiving ride requests</p>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="onlineToggle" onchange="toggleOnline()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <!-- Lynk Balance Card -->
+        <div class="lynk-card">
+            <h4>💳 LYNK BALANCE</h4>
+            <div class="balance">$<span id="lynkBalance">0</span></div>
+            <p style="font-size:12px;opacity:0.8;">Used to unlock ride requests</p>
+            <div class="actions">
+                <button class="btn" onclick="showTopUp()">+ Top Up</button>
+                <button class="btn" onclick="showWithdraw()">Withdraw</button>
+            </div>
+        </div>
+        
+        <!-- Map -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- Active Trip Card -->
+        <div class="active-trip-card" id="activeTripCard">
+            <div class="active-trip-header">
+                <h3>🚗 Active Trip</h3>
+                <span class="trip-status-badge" id="tripStatusBadge">En Route</span>
+            </div>
+            <div class="trip-progress">
+                <div class="progress-step completed" id="tripStep1">
+                    <div class="step-dot">✓</div>
+                    <div class="step-label">Accepted</div>
+                </div>
+                <div class="progress-step active" id="tripStep2">
+                    <div class="step-dot">2</div>
+                    <div class="step-label">Pickup</div>
+                </div>
+                <div class="progress-step" id="tripStep3">
+                    <div class="step-dot">3</div>
+                    <div class="step-label">Complete</div>
+                </div>
+            </div>
+            <div class="trip-passenger">
+                <h4>Passenger: <span id="tripPassengerName">-</span></h4>
+                <p>📍 <span id="tripPickup">-</span></p>
+                <p>🏁 <span id="tripDestination">-</span></p>
+                <p>💰 Fare: <span id="tripFare" style="color:#f9d71c;font-weight:bold;">-</span></p>
+            </div>
+            <div class="trip-actions">
+                <button class="btn btn-secondary" onclick="callPassenger()">📞 Call</button>
+                <button class="btn btn-secondary" onclick="navigateTo()">🧭 Navigate</button>
+            </div>
+            <button class="btn btn-success" id="tripActionBtn" style="margin-top:10px;" onclick="advanceTrip()">
+                ARRIVED AT PICKUP
+            </button>
+        </div>
+        
+        <!-- Ride Requests Section -->
+        <div class="section-header">
+            <h3>📋 Available Requests</h3>
+            <span class="badge" id="requestCount">0</span>
+        </div>
+        
+        <div id="requestsContainer">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <p>No requests available.<br>Go online to receive requests!</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- RENTALS TAB -->
+    <div class="tab-content" id="rentalsTab">
+        <div class="rental-section">
+            <h3>🚗 My Listed Vehicles</h3>
+            <div id="myVehiclesContainer">
+                <!-- Vehicles will be loaded here -->
+            </div>
+            
+            <button class="btn btn-outline" style="margin-top:15px;" onclick="showAddVehicle()">
+                + List a Vehicle for Rent
+            </button>
+        </div>
+        
+        <!-- Add Vehicle Form (hidden by default) -->
+        <div id="addVehicleSection" style="display:none;">
+            <div class="rental-section">
+                <h3>📝 List Your Vehicle</h3>
+                
+                <div class="image-upload" onclick="triggerImageUpload()">
+                    <div class="image-upload-icon">📷</div>
+                    <p>Tap to upload vehicle photos</p>
+                    <input type="file" id="vehicleImages" multiple accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+                </div>
+                <div class="image-preview" id="imagePreview"></div>
+                
+                <div class="input-group">
+                    <label>Vehicle Title *</label>
+                    <input type="text" id="rentalTitle" placeholder="e.g., 2020 Honda Civic LX">
+                </div>
+                
+                <div class="input-group">
+                    <label>Vehicle Type *</label>
+                    <select id="rentalVehicleType">
+                        <option value="car">🚗 Car</option>
+                        <option value="suv">🚙 SUV</option>
+                        <option value="van">🚐 Van</option>
+                        <option value="truck">🚛 Truck</option>
+                        <option value="motorcycle">🏍️ Motorcycle</option>
+                        <option value="bicycle">🚲 Bicycle</option>
+                    </select>
+                </div>
+                
+                <div style="display:flex;gap:10px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>Brand</label>
+                        <input type="text" id="rentalBrand" placeholder="e.g., Honda">
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>Model</label>
+                        <input type="text" id="rentalModel" placeholder="e.g., Civic">
+                    </div>
+                </div>
+                
+                <div style="display:flex;gap:10px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>Year</label>
+                        <input type="number" id="rentalYear" placeholder="2020">
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>Color</label>
+                        <input type="text" id="rentalColor" placeholder="e.g., White">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Location</label>
+                    <input type="text" id="rentalLocation" placeholder="City or area where vehicle is located">
+                </div>
+                
+                <div style="display:flex;gap:10px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>Price per Day *</label>
+                        <input type="number" id="rentalPriceDay" placeholder="0">
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>Price per Week</label>
+                        <input type="number" id="rentalPriceWeek" placeholder="0">
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Security Deposit</label>
+                    <input type="number" id="rentalDeposit" placeholder="0">
+                </div>
+                
+                <div class="input-group">
+                    <label>Features & Description</label>
+                    <textarea id="rentalFeatures" placeholder="AC, Bluetooth, GPS, Fuel included, etc."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>Requirements</label>
+                    <textarea id="rentalRequirements" placeholder="Valid ID, Driver's License, Minimum age, etc."></textarea>
+                </div>
+                
+                <button class="btn btn-primary" onclick="submitVehicleListing()">
+                    📝 LIST VEHICLE
+                </button>
+                <button class="btn btn-secondary" style="margin-top:10px;" onclick="cancelAddVehicle()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places,geometry&loading=async" async defer></script>
+
+<!-- Firebase & App Logic -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, update, remove, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCmHg4nOAXC-JaW2wPesh6VJY7v1twiMw4",
+        authDomain: "swiftdeal-3cee9.firebaseapp.com",
+        databaseURL: "https://swiftdeal-3cee9-default-rtdb.firebaseio.com",
+        projectId: "swiftdeal-3cee9",
+        storageBucket: "swiftdeal-3cee9.firebasestorage.app",
+        messagingSenderId: "626252184385",
+        appId: "1:626252184385:web:b525e1b382c72ccdf43fc0"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
+    
+    // App State
+    let map = null;
+    let driverMarker = null;
+    let mapsReady = false;
+    let currentDriverId = null;
+    let currentDriver = null;
+    let driverLocation = null;
+    let locationWatchId = null;
+    let isOnline = false;
+    let activeTrip = null;
+    let activeTripId = null;
+    let allRequests = [];
+    let unlockedRequests = new Set();
+    let myVehicles = [];
+    let uploadedImages = [];
+    let pendingUnlockRequest = null;
+    
+    // Constants
+    const DEBT_LOCK_THRESHOLD = 5000;
+    const UNLOCK_FEE_PERCENT = 0.05; // 5% of offer
+    const MIN_UNLOCK_FEE = 25;
+    const COMMISSION_PERCENT = 0.15; // 15%
+    
+    // URL params for deep linking
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkedRequestId = urlParams.get('request');
+
+    // ==================== AUTH ====================
+    let authInitialized = false;
+    
+    // Fallback timeout - if auth doesn't respond in 5 seconds, show auth form
+    setTimeout(() => {
+        if (!authInitialized) {
+            console.log('Auth timeout - showing auth form');
+            showAuth();
+        }
+    }, 5000);
+    
+    function hideLoading() {
+        const el = document.getElementById('loadingOverlay');
+        if (el) {
+            el.classList.remove('active');
+            el.style.display = 'none';
+        }
+    }
+    
+    function showAuth() {
+        hideLoading();
+        const el = document.getElementById('authOverlay');
+        if (el) el.classList.add('active');
+    }
+    
+    function hideAuth() {
+        const el = document.getElementById('authOverlay');
+        if (el) el.classList.remove('active');
+    }
+    
+    window.showRegisterForm = function() {
+        document.getElementById('signInSection').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'block';
+    };
+    
+    window.showSignInForm = function() {
+        document.getElementById('signInSection').style.display = 'block';
+        document.getElementById('registerSection').style.display = 'none';
+    };
+    
+    window.handleDriverSignIn = async function() {
+        const phone = document.getElementById('signInPhone').value.trim();
+        
+        if (!phone) {
+            alert("Please enter your phone number.");
+            return;
+        }
+        
+        try {
+            await signInAnonymously(auth);
+            
+            // Find driver by phone
+            const driversRef = ref(database, 'driverAccounts');
+            const snapshot = await get(driversRef);
+            const drivers = snapshot.val() || {};
+            
+            let foundId = null;
+            for (let id in drivers) {
+                if (drivers[id].phone === phone) {
+                    foundId = id;
+                    break;
+                }
+            }
+            
+            if (foundId) {
+                currentDriverId = foundId;
+                localStorage.setItem('swiftDriverId', foundId);
+                await loadDriverProfile();
+                hideAuth();
+                initApp();
+            } else {
+                alert("No account found with this phone number. Please register.");
+                showRegisterForm();
+                document.getElementById('authPhone').value = phone;
+            }
+        } catch (error) {
+            console.error('Sign in error:', error);
+            alert("Sign in failed. Please try again.");
+        }
+    };
+    
+    onAuthStateChanged(auth, async (user) => {
+        authInitialized = true;
+        console.log('Auth state changed:', user ? 'logged in' : 'not logged in');
+        
+        if (!user) {
+            // No Firebase user - show registration
+            showAuth();
+        } else {
+            // Check for existing driver account
+            const driverId = localStorage.getItem('swiftDriverId');
+            console.log('Driver ID from localStorage:', driverId);
+            
+            if (driverId) {
+                currentDriverId = driverId;
+                try {
+                    await loadDriverProfile();
+                    hideLoading();
+                    hideAuth();
+                    initApp();
+                } catch (err) {
+                    console.error('Failed to load driver profile:', err);
+                    localStorage.removeItem('swiftDriverId');
+                    showAuth();
+                }
+            } else {
+                // Has Firebase auth but no driver account - show registration
+                showAuth();
+            }
+        }
+    });
+    
+    window.handleDriverAuth = async function() {
+        const name = document.getElementById('authName').value.trim();
+        const phone = document.getElementById('authPhone').value.trim();
+        const vehicleType = document.getElementById('authVehicleType').value;
+        const vehicle = document.getElementById('authVehicle').value.trim();
+        const plate = document.getElementById('authPlate').value.trim();
+        const lynk = document.getElementById('authLynk').value.trim();
+        
+        if (!name || !phone || !vehicleType || !vehicle || !plate) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+        
+        try {
+            await signInAnonymously(auth);
+            
+            // Check if driver exists
+            const driversRef = ref(database, 'driverAccounts');
+            const snapshot = await get(driversRef);
+            const drivers = snapshot.val() || {};
+            
+            let existingId = null;
+            for (let id in drivers) {
+                if (drivers[id].phone === phone) {
+                    existingId = id;
+                    break;
+                }
+            }
+            
+            if (existingId) {
+                currentDriverId = existingId;
+                localStorage.setItem('swiftDriverId', existingId);
+            } else {
+                const newRef = push(ref(database, 'driverAccounts'));
+                currentDriverId = newRef.key;
+                
+                await set(newRef, {
+                    name: name,
+                    phone: phone,
+                    vehicleType: vehicleType,
+                    vehicle: vehicle,
+                    plate: plate,
+                    lynkAccount: lynk,
+                    status: 'offline',
+                    verified: false,
+                    balance: 0, // Commission owed
+                    lynkBalance: 0, // Lynk wallet balance
+                    earnings: 0,
+                    trips: 0,
+                    rating: 5.0,
+                    ratingCount: 0,
+                    createdAt: Date.now(),
+                    lat: null,
+                    lng: null,
+                    country: null,
+                    countryCode: null
+                });
+                
+                localStorage.setItem('swiftDriverId', currentDriverId);
+            }
+            
+            await loadDriverProfile();
+            hideAuth();
+            initApp();
+            
+        } catch (error) {
+            console.error("Auth error:", error);
+            alert("Error creating account. Please try again.");
+        }
+    };
+    
+    async function loadDriverProfile() {
+        if (!currentDriverId) return;
+        
+        const driverRef = ref(database, `driverAccounts/${currentDriverId}`);
+        
+        onValue(driverRef, (snapshot) => {
+            currentDriver = snapshot.val();
+            if (!currentDriver) {
+                logout();
+                return;
+            }
+            
+            updateDriverUI();
+            checkVerification();
+            checkDebtLock();
+            loadUnlockedRequests();
+        });
+    }
+    
+    function updateDriverUI() {
+        if (!currentDriver) return;
+        
+        // Stats
+        document.getElementById('todayEarnings').textContent = currentDriver.earnings || 0;
+        document.getElementById('todayTrips').textContent = currentDriver.trips || 0;
+        document.getElementById('driverRating').textContent = (currentDriver.rating || 5).toFixed(1);
+        document.getElementById('balanceDue').textContent = currentDriver.balance || 0;
+        document.getElementById('lynkBalance').textContent = currentDriver.lynkBalance || 0;
+        document.getElementById('debtAmount').textContent = currentDriver.balance || 0;
+        
+        // Online status
+        isOnline = currentDriver.status === 'online';
+        document.getElementById('onlineToggle').checked = isOnline;
+        document.getElementById('onlineIndicator').classList.toggle('online', isOnline);
+        document.getElementById('toggleLabel').textContent = isOnline ? 'Online' : 'Go Online';
+        document.getElementById('toggleSubtext').textContent = isOnline ? 
+            'Receiving ride requests' : 'Start receiving ride requests';
+        
+        // Navigation
+        document.getElementById('navDriverName').textContent = currentDriver.name;
+        document.getElementById('navDriverVehicle').textContent = currentDriver.vehicle;
+    }
+    
+    function checkVerification() {
+        const banner = document.getElementById('verificationBanner');
+        banner.classList.toggle('active', !currentDriver.verified);
+    }
+    
+    function checkDebtLock() {
+        const debt = currentDriver?.balance || 0;
+        const banner = document.getElementById('debtLockBanner');
+        
+        if (debt >= DEBT_LOCK_THRESHOLD) {
+            banner.classList.add('active');
+            if (isOnline) {
+                update(ref(database, `driverAccounts/${currentDriverId}`), { status: 'offline' });
+            }
+        } else {
+            banner.classList.remove('active');
+        }
+    }
+    
+    function loadUnlockedRequests() {
+        const saved = localStorage.getItem(`unlocked_${currentDriverId}`);
+        if (saved) {
+            unlockedRequests = new Set(JSON.parse(saved));
+        }
+    }
+    
+    function saveUnlockedRequests() {
+        localStorage.setItem(`unlocked_${currentDriverId}`, JSON.stringify([...unlockedRequests]));
+    }
+
+    // ==================== INIT APP ====================
+    window.initApp = function() {
+        if (!window.google || !window.google.maps) {
+            setTimeout(initApp, 100);
+            return;
+        }
+        
+        mapsReady = true;
+        
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: { lat: 0, lng: 0 },
+            zoom: 2,
+            disableDefaultUI: true,
+            gestureHandling: 'greedy',
+            styles: [
+                { elementType: "geometry", stylers: [{ color: "#212121" }] },
+                { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+                { featureType: "road", elementType: "geometry", stylers: [{ color: "#2c2c2c" }] },
+                { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] },
+                { featureType: "poi", stylers: [{ visibility: "off" }] }
+            ]
+        });
+        
+        driverMarker = new google.maps.Marker({
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: "#f9d71c",
+                fillOpacity: 1,
+                strokeColor: "#000",
+                strokeWeight: 3
+            }
+        });
+        
+        // Get location
+        detectLocation();
+        
+        // Listen for requests
+        listenForRequests();
+        
+        // Listen for my vehicles
+        listenForMyVehicles();
+        
+        // Check for linked request
+        if (linkedRequestId) {
+            setTimeout(() => highlightRequest(linkedRequestId), 2000);
+        }
+    };
+    
+    function detectLocation() {
+        if (!navigator.geolocation) return;
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                driverLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                
+                if (map) {
+                    map.setCenter(driverLocation);
+                    map.setZoom(14);
+                    driverMarker.setPosition(driverLocation);
+                }
+                
+                // Detect country
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ location: driverLocation }, (results, status) => {
+                    if (status === "OK" && results[0]) {
+                        for (let comp of results[0].address_components) {
+                            if (comp.types.includes("country")) {
+                                if (currentDriverId) {
+                                    update(ref(database, `driverAccounts/${currentDriverId}`), {
+                                        country: comp.long_name,
+                                        countryCode: comp.short_name.toLowerCase()
+                                    });
+                                }
+                                break;
+                            }
+                        }
+                    }
+                });
+            },
+            (error) => console.error("Location error:", error),
+            { enableHighAccuracy: true }
+        );
+    }
+
+    // ==================== ONLINE TOGGLE ====================
+    window.toggleOnline = async function() {
+        if (!currentDriver) return;
+        
+        if (!currentDriver.verified) {
+            document.getElementById('onlineToggle').checked = false;
+            alert("Your account is pending verification.");
+            return;
+        }
+        
+        if (currentDriver.balance >= DEBT_LOCK_THRESHOLD) {
+            document.getElementById('onlineToggle').checked = false;
+            alert("Please clear your outstanding balance first.");
+            return;
+        }
+        
+        const newStatus = document.getElementById('onlineToggle').checked ? 'online' : 'offline';
+        
+        await update(ref(database, `driverAccounts/${currentDriverId}`), {
+            status: newStatus
+        });
+        
+        if (newStatus === 'online') {
+            startLocationTracking();
+        } else {
+            stopLocationTracking();
+        }
+    };
+    
+    function startLocationTracking() {
+        if (locationWatchId) return;
+        
+        locationWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                driverLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                
+                if (driverMarker) {
+                    driverMarker.setPosition(driverLocation);
+                }
+                
+                if (currentDriverId) {
+                    update(ref(database, `driverAccounts/${currentDriverId}`), {
+                        lat: driverLocation.lat,
+                        lng: driverLocation.lng,
+                        lastUpdate: Date.now()
+                    });
+                }
+            },
+            (error) => console.error("Watch error:", error),
+            { enableHighAccuracy: true, maximumAge: 0 }
+        );
+    }
+    
+    function stopLocationTracking() {
+        if (locationWatchId) {
+            navigator.geolocation.clearWatch(locationWatchId);
+            locationWatchId = null;
+        }
+        
+        if (currentDriverId) {
+            update(ref(database, `driverAccounts/${currentDriverId}`), {
+                lat: null,
+                lng: null
+            });
+        }
+    }
+
+    // ==================== REQUESTS ====================
+    function listenForRequests() {
+        const requestsRef = ref(database, 'requests');
+        
+        onValue(requestsRef, (snapshot) => {
+            allRequests = [];
+            const data = snapshot.val() || {};
+            
+            // Check for active trip first
+            let foundActiveTrip = false;
+            
+            for (let id in data) {
+                const request = data[id];
+                
+                // Check if this is our active trip
+                if (request.driverId === currentDriverId && 
+                    ['confirmed', 'arriving', 'in_progress'].includes(request.status)) {
+                    foundActiveTrip = true;
+                    activeTripId = id;
+                    activeTrip = request;
+                    showActiveTrip(request);
+                }
+                
+                // Collect pending requests
+                if (request.status === 'pending' || request.status === 'driver_accepted') {
+                    // Filter by country if available
+                    if (!currentDriver?.countryCode || 
+                        request.countryCode === currentDriver.countryCode) {
+                        
+                        // Check if not declined by us
+                        if (!request.declinedDrivers?.includes(currentDriverId)) {
+                            allRequests.push({ id, ...request });
+                        }
+                    }
+                }
+            }
+            
+            // Hide active trip card if no active trip
+            if (!foundActiveTrip) {
+                document.getElementById('activeTripCard').classList.remove('active');
+                activeTrip = null;
+                activeTripId = null;
+            }
+            
+            renderRequests();
+        });
+    }
+    
+    function renderRequests() {
+        const container = document.getElementById('requestsContainer');
+        document.getElementById('requestCount').textContent = allRequests.length;
+        
+        if (allRequests.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>${isOnline ? 'Waiting for requests...' : 'Go online to receive requests!'}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort by timestamp
+        allRequests.sort((a, b) => b.timestamp - a.timestamp);
+        
+        container.innerHTML = allRequests.map(request => {
+            const isUnlocked = unlockedRequests.has(request.id);
+            const typeColors = { ride: '#17a2b8', courier: '#fd7e14', hire: '#6f42c1' };
+            const typeIcons = { ride: '🚕', courier: '📦', hire: '🚛' };
+            const unlockFee = calculateUnlockFee(request.offer);
+            
+            return `
+                <div class="request-card ${isUnlocked ? 'unlocked' : 'locked'}" data-id="${request.id}">
+                    <div class="request-card-header">
+                        <div class="request-type">
+                            <span class="request-type-badge" style="background:${typeColors[request.type] || '#666'}">
+                                ${typeIcons[request.type] || '🚗'} ${request.type?.toUpperCase() || 'RIDE'}
+                            </span>
+                        </div>
+                        <div class="request-offer">${request.currency || '$'}${request.offer}</div>
+                    </div>
+                    <div class="request-card-body">
+                        <!-- Preview (shown when locked) -->
+                        <div class="request-preview">
+                            <div>📍 ${maskAddress(request.pickup)}</div>
+                            <div>🏁 ${maskAddress(request.destination)}</div>
+                            ${request.type === 'courier' ? `<div>📦 Package: ${request.packageSize || 'Standard'}</div>` : ''}
+                            ${request.type === 'hire' ? `<div>🚛 ${request.hireCategory || 'General'}</div>` : ''}
+                        </div>
+                        
+                        <!-- Full details (shown when unlocked) -->
+                        <div class="request-full">
+                            <div class="request-detail">
+                                <span class="label">Passenger</span>
+                                <span>${request.name || 'N/A'}</span>
+                            </div>
+                            <div class="request-detail">
+                                <span class="label">Phone</span>
+                                <span><a href="tel:${request.phone}" style="color:#f9d71c;">${request.phone || 'N/A'}</a></span>
+                            </div>
+                            <div class="request-detail">
+                                <span class="label">Pickup</span>
+                                <span>${request.pickup}</span>
+                            </div>
+                            <div class="request-detail">
+                                <span class="label">Destination</span>
+                                <span>${request.destination}</span>
+                            </div>
+                            ${request.description ? `
+                                <div class="request-detail">
+                                    <span class="label">Details</span>
+                                    <span>${request.description}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="request-meta">
+                            <span>📍 ${request.country || 'Unknown'}</span>
+                            <span>${getTimeAgo(request.timestamp)}</span>
+                        </div>
+                        
+                        ${!isUnlocked ? `
+                            <div class="unlock-prompt">
+                                <h4>🔒 Unlock to See Full Details</h4>
+                                <p>Pay ${request.currency || '$'}${unlockFee} to view passenger contact & accept</p>
+                                <button class="btn btn-primary btn-sm" onclick="showUnlockPrompt('${request.id}')">
+                                    🔓 Unlock for ${request.currency || '$'}${unlockFee}
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="request-actions">
+                                <button class="btn btn-secondary" onclick="declineRequest('${request.id}')">Decline</button>
+                                <button class="btn btn-success" onclick="acceptRequest('${request.id}')" 
+                                    ${!isOnline || !currentDriver?.verified ? 'disabled' : ''}>
+                                    Accept
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function maskAddress(address) {
+        if (!address) return '***';
+        const parts = address.split(',');
+        if (parts.length > 1) {
+            return parts[0].substring(0, 10) + '*** ' + parts[parts.length - 1];
+        }
+        return address.substring(0, 15) + '***';
+    }
+    
+    function calculateUnlockFee(offer) {
+        const fee = Math.ceil(offer * UNLOCK_FEE_PERCENT);
+        return Math.max(fee, MIN_UNLOCK_FEE);
+    }
+    
+    window.showUnlockPrompt = function(requestId) {
+        const request = allRequests.find(r => r.id === requestId);
+        if (!request) return;
+        
+        pendingUnlockRequest = request;
+        const unlockFee = calculateUnlockFee(request.offer);
+        
+        document.getElementById('unlockRequestPreview').innerHTML = `
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="color:#888;">Type</span>
+                <span>${request.type?.toUpperCase() || 'RIDE'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                <span style="color:#888;">Offer</span>
+                <span style="color:#f9d71c;font-weight:bold;">${request.currency || '$'}${request.offer}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:#888;">Location</span>
+                <span>${request.country || 'Unknown'}</span>
+            </div>
+        `;
+        
+        document.getElementById('unlockCost').textContent = `${request.currency || '$'}${unlockFee}`;
+        document.getElementById('unlockCurrentBalance').textContent = `${request.currency || '$'}${currentDriver?.lynkBalance || 0}`;
+        
+        const canUnlock = (currentDriver?.lynkBalance || 0) >= unlockFee;
+        document.getElementById('unlockBtn').disabled = !canUnlock;
+        
+        if (!canUnlock) {
+            document.getElementById('unlockBtn').textContent = 'Insufficient Balance - Top Up First';
+        } else {
+            document.getElementById('unlockBtn').textContent = '🔓 UNLOCK & VIEW DETAILS';
+        }
+        
+        document.getElementById('unlockOverlay').classList.add('active');
+    };
+    
+    window.confirmUnlock = async function() {
+        if (!pendingUnlockRequest || !currentDriverId) return;
+        
+        const unlockFee = calculateUnlockFee(pendingUnlockRequest.offer);
+        const currentBalance = currentDriver?.lynkBalance || 0;
+        
+        if (currentBalance < unlockFee) {
+            alert("Insufficient Lynk balance. Please top up first.");
+            return;
+        }
+        
+        try {
+            // Deduct from Lynk balance
+            await update(ref(database, `driverAccounts/${currentDriverId}`), {
+                lynkBalance: currentBalance - unlockFee
+            });
+            
+            // Record the transaction
+            await push(ref(database, 'lynkTransactions'), {
+                driverId: currentDriverId,
+                type: 'unlock_fee',
+                amount: -unlockFee,
+                requestId: pendingUnlockRequest.id,
+                timestamp: Date.now()
+            });
+            
+            // Mark as unlocked locally
+            unlockedRequests.add(pendingUnlockRequest.id);
+            saveUnlockedRequests();
+            
+            closeUnlock();
+            renderRequests();
+            
+        } catch (error) {
+            console.error("Unlock error:", error);
+            alert("Error processing unlock. Please try again.");
+        }
+    };
+    
+    window.closeUnlock = function() {
+        document.getElementById('unlockOverlay').classList.remove('active');
+        pendingUnlockRequest = null;
+    };
+    
+    window.acceptRequest = async function(requestId) {
+        if (!currentDriverId || !currentDriver) return;
+        
+        if (!currentDriver.verified) {
+            alert("Your account is pending verification.");
+            return;
+        }
+        
+        if (activeTrip) {
+            alert("You already have an active trip.");
+            return;
+        }
+        
+        try {
+            await update(ref(database, `requests/${requestId}`), {
+                status: 'driver_accepted',
+                driverId: currentDriverId,
+                driverName: currentDriver.name,
+                driverPhone: currentDriver.phone,
+                driverVehicle: `${currentDriver.vehicle} - ${currentDriver.plate}`,
+                driverRating: currentDriver.rating,
+                driverTrips: currentDriver.trips,
+                driverLat: driverLocation?.lat || null,
+                driverLng: driverLocation?.lng || null,
+                acceptedAt: Date.now()
+            });
+            
+            alert("Request sent to passenger for confirmation. Waiting...");
+            
+        } catch (error) {
+            console.error("Accept error:", error);
+            alert("Error accepting request.");
+        }
+    };
+    
+    window.declineRequest = function(requestId) {
+        // Just remove from view
+        const index = allRequests.findIndex(r => r.id === requestId);
+        if (index > -1) {
+            allRequests.splice(index, 1);
+            renderRequests();
+        }
+    };
+    
+    function highlightRequest(requestId) {
+        const card = document.querySelector(`.request-card[data-id="${requestId}"]`);
+        if (card) {
+            card.style.border = '2px solid #f9d71c';
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // ==================== ACTIVE TRIP ====================
+    function showActiveTrip(trip) {
+        const card = document.getElementById('activeTripCard');
+        card.classList.add('active');
+        
+        document.getElementById('tripPassengerName').textContent = trip.name || 'Passenger';
+        document.getElementById('tripPickup').textContent = trip.pickup;
+        document.getElementById('tripDestination').textContent = trip.destination;
+        document.getElementById('tripFare').textContent = `${trip.currency || '$'}${trip.offer}`;
+        
+        // Update progress steps
+        const step1 = document.getElementById('tripStep1');
+        const step2 = document.getElementById('tripStep2');
+        const step3 = document.getElementById('tripStep3');
+        const statusBadge = document.getElementById('tripStatusBadge');
+        const actionBtn = document.getElementById('tripActionBtn');
+        
+        [step1, step2, step3].forEach(s => s.classList.remove('active', 'completed'));
+        
+        switch (trip.status) {
+            case 'confirmed':
+                step1.classList.add('completed');
+                step2.classList.add('active');
+                statusBadge.textContent = 'En Route to Pickup';
+                actionBtn.textContent = 'ARRIVED AT PICKUP';
+                break;
+            case 'arriving':
+                step1.classList.add('completed');
+                step2.classList.add('completed');
+                statusBadge.textContent = 'Waiting for Passenger';
+                actionBtn.textContent = 'START TRIP';
+                break;
+            case 'in_progress':
+                step1.classList.add('completed');
+                step2.classList.add('completed');
+                step3.classList.add('active');
+                statusBadge.textContent = 'Trip in Progress';
+                actionBtn.textContent = 'COMPLETE TRIP';
+                break;
+        }
+    }
+    
+    window.advanceTrip = async function() {
+        if (!activeTripId || !activeTrip) return;
+        
+        let newStatus;
+        switch (activeTrip.status) {
+            case 'confirmed':
+                newStatus = 'arriving';
+                break;
+            case 'arriving':
+                newStatus = 'in_progress';
+                break;
+            case 'in_progress':
+                await completeTrip();
+                return;
+        }
+        
+        await update(ref(database, `requests/${activeTripId}`), {
+            status: newStatus,
+            [`${newStatus}At`]: Date.now()
+        });
+    };
+    
+    async function completeTrip() {
+        if (!confirm("Complete this trip and collect payment?")) return;
+        
+        const fare = activeTrip.offer || 0;
+        const commission = Math.ceil(fare * COMMISSION_PERCENT);
+        
+        try {
+            // Update request
+            await update(ref(database, `requests/${activeTripId}`), {
+                status: 'completed',
+                completedAt: Date.now(),
+                commission: commission
+            });
+            
+            // Update driver stats
+            await update(ref(database, `driverAccounts/${currentDriverId}`), {
+                earnings: (currentDriver.earnings || 0) + fare,
+                trips: (currentDriver.trips || 0) + 1,
+                balance: (currentDriver.balance || 0) + commission
+            });
+            
+            // Log trip
+            await push(ref(database, 'tripLogs'), {
+                driverId: currentDriverId,
+                driverName: currentDriver.name,
+                requestId: activeTripId,
+                type: activeTrip.type,
+                fare: fare,
+                commission: commission,
+                pickup: activeTrip.pickup,
+                destination: activeTrip.destination,
+                passenger: activeTrip.name,
+                completedAt: Date.now()
+            });
+            
+            alert(`Trip completed!\nFare: ${activeTrip.currency || '$'}${fare}\nCommission: ${activeTrip.currency || '$'}${commission}`);
+            
+        } catch (error) {
+            console.error("Complete error:", error);
+            alert("Error completing trip.");
+        }
+    }
+    
+    window.callPassenger = function() {
+        if (activeTrip?.phone) {
+            window.location.href = `tel:${activeTrip.phone}`;
+        }
+    };
+    
+    window.navigateTo = function() {
+        if (!activeTrip) return;
+        const dest = activeTrip.status === 'in_progress' ? activeTrip.destination : activeTrip.pickup;
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`, '_blank');
+    };
+
+    // ==================== LYNK BALANCE ====================
+    window.showTopUp = function() {
+        document.getElementById('topUpOverlay').classList.add('active');
+    };
+    
+    window.closeTopUp = function() {
+        document.getElementById('topUpOverlay').classList.remove('active');
+    };
+    
+    window.setTopUpAmount = function(amount) {
+        document.getElementById('topUpAmount').value = amount;
+    };
+    
+    window.processTopUp = async function() {
+        const amount = parseInt(document.getElementById('topUpAmount').value);
+        if (!amount || amount < 100) {
+            alert("Minimum top up is $100");
+            return;
+        }
+        
+        // In production, this would integrate with Lynk API
+        // For now, simulate instant top up
+        try {
+            const currentBalance = currentDriver?.lynkBalance || 0;
+            await update(ref(database, `driverAccounts/${currentDriverId}`), {
+                lynkBalance: currentBalance + amount
+            });
+            
+            await push(ref(database, 'lynkTransactions'), {
+                driverId: currentDriverId,
+                type: 'top_up',
+                amount: amount,
+                timestamp: Date.now()
+            });
+            
+            alert(`Successfully added $${amount} to your Lynk balance!`);
+            closeTopUp();
+            
+        } catch (error) {
+            console.error("Top up error:", error);
+            alert("Error processing top up.");
+        }
+    };
+    
+    window.showWithdraw = function() {
+        alert("Withdraw feature coming soon! Contact admin to withdraw funds.");
+    };
+    
+    window.contactAdminDebt = function() {
+        window.open(`https://wa.me/18763351489?text=Hi,%20I%20need%20to%20clear%20my%20driver%20debt%20of%20$${currentDriver?.balance || 0}.`, '_blank');
+    };
+
+    // ==================== VEHICLE RENTALS ====================
+    function listenForMyVehicles() {
+        if (!currentDriverId) return;
+        
+        const rentalsRef = ref(database, 'rentals');
+        
+        onValue(rentalsRef, (snapshot) => {
+            myVehicles = [];
+            const data = snapshot.val() || {};
+            
+            for (let id in data) {
+                if (data[id].ownerId === currentDriverId) {
+                    myVehicles.push({ id, ...data[id] });
+                }
+            }
+            
+            renderMyVehicles();
+        });
+    }
+    
+    function renderMyVehicles() {
+        const container = document.getElementById('myVehiclesContainer');
+        
+        if (myVehicles.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚗</div>
+                    <p>You haven't listed any vehicles yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = myVehicles.map(vehicle => `
+            <div class="my-vehicle-card">
+                <img src="${vehicle.images?.[0] || 'https://via.placeholder.com/400x120?text=No+Image'}" 
+                     alt="${vehicle.title}" onerror="this.src='https://via.placeholder.com/400x120?text=No+Image'">
+                <div class="my-vehicle-card-body">
+                    <h4>${vehicle.title}</h4>
+                    <p>$${vehicle.pricePerDay}/day · ${vehicle.location || 'Location not set'}</p>
+                    <span class="my-vehicle-status ${vehicle.status}">${vehicle.status}</span>
+                    <div class="my-vehicle-actions">
+                        <button class="btn btn-secondary" onclick="editVehicle('${vehicle.id}')">Edit</button>
+                        <button class="btn btn-${vehicle.status === 'available' ? 'danger' : 'success'}" 
+                            onclick="toggleVehicleStatus('${vehicle.id}', '${vehicle.status}')">
+                            ${vehicle.status === 'available' ? 'Pause' : 'Activate'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    window.showAddVehicle = function() {
+        document.getElementById('addVehicleSection').style.display = 'block';
+        document.getElementById('myVehiclesContainer').parentElement.querySelector('h3').style.display = 'none';
+        document.getElementById('myVehiclesContainer').style.display = 'none';
+        document.querySelector('[onclick="showAddVehicle()"]').style.display = 'none';
+    };
+    
+    window.cancelAddVehicle = function() {
+        document.getElementById('addVehicleSection').style.display = 'none';
+        document.getElementById('myVehiclesContainer').parentElement.querySelector('h3').style.display = 'block';
+        document.getElementById('myVehiclesContainer').style.display = 'block';
+        document.querySelector('[onclick="showAddVehicle()"]').style.display = 'block';
+        clearVehicleForm();
+    };
+    
+    function clearVehicleForm() {
+        document.getElementById('rentalTitle').value = '';
+        document.getElementById('rentalBrand').value = '';
+        document.getElementById('rentalModel').value = '';
+        document.getElementById('rentalYear').value = '';
+        document.getElementById('rentalColor').value = '';
+        document.getElementById('rentalLocation').value = '';
+        document.getElementById('rentalPriceDay').value = '';
+        document.getElementById('rentalPriceWeek').value = '';
+        document.getElementById('rentalDeposit').value = '';
+        document.getElementById('rentalFeatures').value = '';
+        document.getElementById('rentalRequirements').value = '';
+        document.getElementById('imagePreview').innerHTML = '';
+        uploadedImages = [];
+    }
+    
+    window.triggerImageUpload = function() {
+        document.getElementById('vehicleImages').click();
+    };
+    
+    window.handleImageUpload = function(event) {
+        const files = event.target.files;
+        const preview = document.getElementById('imagePreview');
+        
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImages.push(e.target.result);
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    window.submitVehicleListing = async function() {
+        const title = document.getElementById('rentalTitle').value.trim();
+        const vehicleType = document.getElementById('rentalVehicleType').value;
+        const pricePerDay = document.getElementById('rentalPriceDay').value;
+        
+        if (!title || !pricePerDay) {
+            alert("Please fill in required fields.");
+            return;
+        }
+        
+        try {
+            const rentalRef = push(ref(database, 'rentals'));
+            
+            await set(rentalRef, {
+                ownerId: currentDriverId,
+                ownerName: currentDriver.name,
+                ownerPhone: currentDriver.phone,
+                title: title,
+                vehicleType: vehicleType,
+                brand: document.getElementById('rentalBrand').value.trim(),
+                model: document.getElementById('rentalModel').value.trim(),
+                year: document.getElementById('rentalYear').value.trim(),
+                color: document.getElementById('rentalColor').value.trim(),
+                location: document.getElementById('rentalLocation').value.trim(),
+                country: currentDriver.country,
+                countryCode: currentDriver.countryCode,
+                pricePerDay: parseInt(pricePerDay),
+                pricePerWeek: parseInt(document.getElementById('rentalPriceWeek').value) || parseInt(pricePerDay) * 6,
+                deposit: parseInt(document.getElementById('rentalDeposit').value) || 0,
+                features: document.getElementById('rentalFeatures').value.trim(),
+                requirements: document.getElementById('rentalRequirements').value.trim(),
+                images: uploadedImages.slice(0, 5), // Max 5 images
+                status: 'available',
+                createdAt: Date.now()
+            });
+            
+            alert("Vehicle listed successfully!");
+            cancelAddVehicle();
+            
+        } catch (error) {
+            console.error("Listing error:", error);
+            alert("Error listing vehicle.");
+        }
+    };
+    
+    window.toggleVehicleStatus = async function(vehicleId, currentStatus) {
+        const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
+        await update(ref(database, `rentals/${vehicleId}`), { status: newStatus });
+    };
+    
+    window.editVehicle = function(vehicleId) {
+        alert("Edit feature coming soon!");
+    };
+
+    // ==================== TABS ====================
+    window.switchTab = function(tabName) {
+        document.querySelectorAll('.main-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        document.getElementById(`${tabName}Tab`).classList.add('active');
+    };
+
+    // ==================== UTILITIES ====================
+    function getTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    // ==================== NAVIGATION ====================
+    window.openNav = () => {
+        document.getElementById("mySidenav").style.width = "280px";
+        document.getElementById("sidenavOverlay").style.display = "block";
+    };
+    
+    window.closeNav = () => {
+        document.getElementById("mySidenav").style.width = "0";
+        document.getElementById("sidenavOverlay").style.display = "none";
+    };
+    
+    window.showEarnings = () => { alert("Earnings history coming soon!"); closeNav(); };
+    window.showTripHistory = () => { alert("Trip history coming soon!"); closeNav(); };
+    window.showDocuments = () => { alert("Documents coming soon!"); closeNav(); };
+    window.showSettings = () => { alert("Settings coming soon!"); closeNav(); };
+    window.showSupport = () => { 
+        window.open("https://wa.me/18763351489?text=Hi,%20I%20need%20driver%20support.", "_blank"); 
+        closeNav(); 
+    };
+    
+    window.logout = function() {
+        if (confirm("Sign out?")) {
+            stopLocationTracking();
+            if (currentDriverId) {
+                update(ref(database, `driverAccounts/${currentDriverId}`), {
+                    status: 'offline',
+                    lat: null,
+                    lng: null
+                });
+            }
+            localStorage.removeItem('swiftDriverId');
+            signOut(auth).then(() => location.reload());
+        }
+        closeNav();
+    };
+
+    // ==================== INIT ====================
+    window.onload = function() {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    };
+</script>
+
+</body>
+</html>

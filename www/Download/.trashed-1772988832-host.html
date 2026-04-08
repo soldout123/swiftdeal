@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftDeal Admin Panel</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { background: #000; padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 2px solid #f9d71c; }
+        .header h1 { color: #f9d71c; font-size: 28px; }
+        .header p { color: #888; margin-top: 5px; }
+        
+        /* Stats */
+        .queue-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-box { background: #1a1a1a; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        .stat-number { font-size: 36px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 13px; color: #888; }
+        
+        /* Driver Cards */
+        .driver-card { background: #1a1a1a; padding: 20px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; border: 2px solid #333; transition: all 0.3s; }
+        .driver-card:hover { border-color: #f9d71c; transform: translateY(-2px); }
+        .driver-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .driver-card h4 { color: #f9d71c; margin: 0; }
+        .pending-badge { background: #ffc107; color: #000; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; }
+        .driver-card-body p { margin: 5px 0; color: #ccc; font-size: 14px; }
+        .btn-review { background: #f9d71c; color: #000; padding: 10px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); overflow: auto; }
+        .modal-content { background: white; margin: 3% auto; padding: 30px; border-radius: 20px; max-width: 900px; color: #000; }
+        .close { float: right; font-size: 32px; font-weight: bold; cursor: pointer; color: #999; }
+        .close:hover { color: #000; }
+        
+        /* Documents Grid */
+        .documents-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px 0; }
+        .doc-preview { border: 2px solid #ddd; border-radius: 12px; padding: 15px; }
+        .doc-preview h4 { margin: 0 0 15px; }
+        .doc-preview img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
+        
+        /* Buttons */
+        .btn-approve { flex: 1; background: #28a745; color: white; padding: 15px; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-reject { flex: 1; background: #dc3545; color: white; padding: 15px; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .modal-actions { display: flex; gap: 15px; margin-top: 30px; }
+        
+        #rejectForm { display: none; margin-top: 20px; }
+        #rejectionReason { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; }
+        .btn-confirm-reject { background: #dc3545; color: white; padding: 12px 24px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        .empty-state { text-align: center; color: #888; padding: 40px; }
+        .driver-info { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+        .driver-info h3 { margin: 0 0 15px; }
+        .driver-info p { margin: 8px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ SwiftDeal Admin Panel</h1>
+            <p>Driver Verification & Platform Management</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="queue-stats">
+            <div class="stat-box">
+                <div class="stat-number" id="pendingCount" style="color: #ffc107;">0</div>
+                <div class="stat-label">Pending Review</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="approvedToday" style="color: #28a745;">0</div>
+                <div class="stat-label">Approved Today</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="rejectedToday" style="color: #dc3545;">0</div>
+                <div class="stat-label">Rejected Today</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="totalDrivers" style="color: #f9d71c;">0</div>
+                <div class="stat-label">Total Drivers</div>
+            </div>
+        </div>
+
+        <h2 style="color: #f9d71c; margin-bottom: 20px;">👥 Driver Verification Queue</h2>
+        <div id="driverQueue"></div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReviewModal()">&times;</span>
+            
+            <h2>Review Driver Application</h2>
+            
+            <div class="driver-info">
+                <h3 id="reviewDriverName">---</h3>
+                <p><strong>Email:</strong> <span id="reviewDriverEmail">---</span></p>
+                <p><strong>Phone:</strong> <span id="reviewDriverPhone">---</span></p>
+                <p><strong>Vehicle:</strong> <span id="reviewDriverVehicle">---</span></p>
+                <p><strong>Plate:</strong> <span id="reviewDriverPlate">---</span></p>
+                <p><strong>Submitted:</strong> <span id="reviewSubmitDate">---</span></p>
+            </div>
+
+            <div class="documents-grid">
+                <div class="doc-preview">
+                    <h4>📷 Vehicle Photo</h4>
+                    <img id="previewVehiclePhoto" src="" alt="Vehicle">
+                </div>
+                <div class="doc-preview">
+                    <h4>📋 Registration</h4>
+                    <img id="previewRegistration" src="" alt="Registration">
+                </div>
+                <div class="doc-preview">
+                    <h4>🆔 Government ID</h4>
+                    <img id="previewGovId" src="" alt="ID">
+                </div>
+                <div class="doc-preview">
+                    <h4>🤳 Driver Selfie</h4>
+                    <img id="previewSelfie" src="" alt="Selfie">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-approve" onclick="approveDriver()">✅ Approve Driver</button>
+                <button class="btn-reject" onclick="showRejectForm()">❌ Reject Application</button>
+            </div>
+
+            <div id="rejectForm">
+                <h4>Rejection Reason</h4>
+                <textarea id="rejectionReason" rows="4" placeholder="Enter reason for rejection..."></textarea>
+                <button class="btn-confirm-reject" onclick="confirmRejectDriver()">Confirm Rejection</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDbiSK1z3Kr5TM34lt2XYnPSY5b1xIBa5c",
+            authDomain: "swiftdeal-3cee9.firebaseapp.com",
+            databaseURL: "https://swiftdeal-3cee9-default-rtdb.firebaseio.com",
+            projectId: "swiftdeal-3cee9",
+            storageBucket: "swiftdeal-3cee9.firebasestorage.app",
+            messagingSenderId: "626252184385",
+            appId: "1:626252184385:android:bfa34b0056197eddf43fc0"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let currentReviewDriverId = null;
+        const currentAdmin = { id: 'ADMIN_001', name: 'Admin' };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDriverQueue();
+            loadAdminStats();
+        });
+
+        // ============================================
+        // LOAD PENDING DRIVERS
+        // ============================================
+        function loadDriverQueue() {
+            database.ref('drivers')
+                .orderByChild('status')
+                .equalTo('pending')
+                .on('value', (snapshot) => {
+                    const drivers = snapshot.val();
+                    const queueDiv = document.getElementById('driverQueue');
+                    
+                    if (!drivers) {
+                        queueDiv.innerHTML = '<p class="empty-state">No pending applications</p>';
+                        document.getElementById('pendingCount').textContent = '0';
+                        return;
+                    }
+
+                    const driverList = Object.entries(drivers);
+                    document.getElementById('pendingCount').textContent = driverList.length;
+
+                    queueDiv.innerHTML = driverList.map(([id, driver]) => `
+                        <div class="driver-card" onclick="reviewDriver('${id}')">
+                            <div class="driver-card-header">
+                                <h4>${driver.name}</h4>
+                                <span class="pending-badge">⏳ Pending</span>
+                            </div>
+                            <div class="driver-card-body">
+                                <p><strong>Vehicle:</strong> ${driver.vehicleMake} ${driver.vehicleModel}</p>
+                                <p><strong>Plate:</strong> ${driver.vehiclePlate}</p>
+                                <p><strong>Email:</strong> ${driver.email}</p>
+                                <p><strong>Submitted:</strong> ${new Date(driver.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <button class="btn-review" onclick="event.stopPropagation(); reviewDriver('${id}')">Review Application →</button>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        // ============================================
+        // REVIEW DRIVER
+        // ============================================
+        function reviewDriver(driverId) {
+            currentReviewDriverId = driverId;
+            
+            database.ref(`drivers/${driverId}`).once('value', (snapshot) => {
+                const driver = snapshot.val();
+                
+                // Fill driver info
+                document.getElementById('reviewDriverName').textContent = driver.name;
+                document.getElementById('reviewDriverEmail').textContent = driver.email;
+                document.getElementById('reviewDriverPhone').textContent = driver.phone;
+                document.getElementById('reviewDriverVehicle').textContent = 
+                    `${driver.vehicleMake} ${driver.vehicleModel} (${driver.vehicleYear})`;
+                document.getElementById('reviewDriverPlate').textContent = driver.vehiclePlate;
+                document.getElementById('reviewSubmitDate').textContent = 
+                    new Date(driver.createdAt).toLocaleString();
+
+                // Load document previews
+                if (driver.documents) {
+                    document.getElementById('previewVehiclePhoto').src = driver.documents.vehiclePhoto?.data || '';
+                    document.getElementById('previewRegistration').src = driver.documents.registration?.data || '';
+                    document.getElementById('previewGovId').src = driver.documents.govId?.data || '';
+                    document.getElementById('previewSelfie').src = driver.documents.selfie?.data || '';
+                }
+
+                // Show modal
+                document.getElementById('reviewModal').style.display = 'block';
+            });
+        }
+
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+            document.getElementById('rejectForm').style.display = 'none';
+            document.getElementById('rejectionReason').value = '';
+            currentReviewDriverId = null;
+        }
+
+        // ============================================
+        // APPROVE DRIVER
+        // ============================================
+        async function approveDriver() {
+            if (!currentReviewDriverId) return;
+
+            if (confirm('✅ Approve this driver? They will be able to subscribe and go online.')) {
+                try {
+                    await database.ref(`drivers/${currentReviewDriverId}`).update({
+                        status: 'approved',
+                        approvedAt: Date.now(),
+                        approvedBy: currentAdmin.id
+                    });
+
+                    alert('✅ Driver approved successfully!');
+                    closeReviewModal();
+                    
+                } catch (error) {
+                    console.error('Approval error:', error);
+                    alert('Failed to approve driver. Please try again.');
+                }
+            }
+        }
+
+        // ============================================
+        // REJECT DRIVER
+        // ============================================
+        function showRejectForm() {
+            document.getElementById('rejectForm').style.display = 'block';
+        }
+
+        async function confirmRejectDriver() {
+            if (!currentReviewDriverId) return;
+
+            const reason = document.getElementById('rejectionReason').value.trim();
+            if (!reason) {
+                alert('Please enter a rejection reason');
+                return;
+            }
+
+            if (confirm('❌ Reject this driver application?')) {
+                try {
+                    await database.ref(`drivers/${currentReviewDriverId}`).update({
+                        status: 'rejected',
+                        rejectedAt: Date.now(),
+                        rejectedBy: currentAdmin.id,
+                        rejectionReason: reason
+                    });
+
+                    alert('❌ Driver application rejected');
+                    closeReviewModal();
+                    
+                } catch (error) {
+                    console.error('Rejection error:', error);
+                    alert('Failed to reject driver. Please try again.');
+                }
+            }
+        }
+
+        // ============================================
+        // LOAD STATS
+        // ============================================
+        function loadAdminStats() {
+            const today = new Date().setHours(0, 0, 0, 0);
+
+            database.ref('drivers').on('value', (snapshot) => {
+                const drivers = snapshot.val();
+                if (drivers) {
+                    const driverList = Object.values(drivers);
+                    
+                    // Total drivers
+                    document.getElementById('totalDrivers').textContent = driverList.length;
+                    
+                    // Approved today
+                    const approvedToday = driverList.filter(d => 
+                        d.status === 'approved' && d.approvedAt >= today
+                    ).length;
+                    document.getElementById('approvedToday').textContent = approvedToday;
+
+                    // Rejected today
+                    const rejectedToday = driverList.filter(d => 
+                        d.status === 'rejected' && d.rejectedAt >= today
+                    ).length;
+                    document.getElementById('rejectedToday').textContent = rejectedToday;
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (event.target == modal) {
+                closeReviewModal();
+            }
+        }
+    </script>
+</body>
+</html>

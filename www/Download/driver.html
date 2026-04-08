@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>SwiftDeal - Driver</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #0a0a0a; color: #fff; }
+        .container { max-width: 500px; margin: 0 auto; min-height: 100vh; }
+        .header { background: #000; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f9d71c; position: sticky; top: 0; z-index: 100; }
+        .header h1 { margin: 0; font-size: 18px; color: #f9d71c; }
+        .menu-btn { background: none; border: none; color: #f9d71c; font-size: 24px; cursor: pointer; }
+        .online-indicator { width: 10px; height: 10px; border-radius: 50%; background: #666; }
+        .online-indicator.online { background: #28a745; }
+        .pending-banner { background: linear-gradient(135deg, #ffc107, #ffdb4d); padding: 20px; margin: 15px; border-radius: 15px; text-align: center; }
+        .pending-banner h3 { margin: 0 0 10px; color: #000; }
+        .pending-banner p { margin: 0; color: #333; font-size: 13px; }
+        .status-box { background: #1a1a1a; padding: 20px; margin: 15px; border-radius: 15px; border: 1px solid #333; }
+        .status-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; font-size: 14px; }
+        .status-item:last-child { border-bottom: none; }
+        .status-badge { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .status-badge.pending { background: #ffc107; color: #000; }
+        .status-badge.approved { background: #28a745; color: white; }
+        .status-badge.rejected { background: #dc3545; color: white; }
+        .upload-section { padding: 15px; margin: 15px; background: #111; border-radius: 15px; }
+        .upload-step { background: #1a1a1a; padding: 15px; border-radius: 10px; margin-bottom: 12px; border: 2px solid #333; }
+        .upload-step.completed { border-color: #28a745; }
+        .upload-step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .step-number { width: 28px; height: 28px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; }
+        .upload-step.completed .step-number { background: #28a745; }
+        .step-title { font-weight: 600; font-size: 14px; }
+        .step-desc { font-size: 11px; color: #888; }
+        .upload-preview { width: 100%; height: 100px; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 10px; }
+        .upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .upload-preview .placeholder { color: #666; font-size: 12px; }
+        .upload-btn { width: 100%; padding: 10px; background: #f9d71c; color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 13px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
+        .stat-card { background: #111; padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 22px; font-weight: bold; }
+        .stat-value.success { color: #28a745; }
+        .stat-label { font-size: 11px; color: #888; margin-top: 5px; }
+        .toggle-card { margin: 0 15px 15px; background: #111; padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .toggle-info h3 { margin: 0; font-size: 15px; }
+        .toggle-info p { margin: 4px 0 0; font-size: 12px; color: #888; }
+        .toggle-switch { position: relative; width: 55px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #444; border-radius: 30px; transition: 0.3s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background: #28a745; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(25px); }
+        .toggle-switch input:disabled + .toggle-slider { background: #333; cursor: not-allowed; }
+        .subscription-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; border-radius: 20px; text-align: center; margin: 20px 15px; }
+        .subscription-price { font-size: 48px; font-weight: bold; margin: 20px 0; }
+        .subscription-price span { font-size: 24px; opacity: 0.8; }
+        .subscription-features { list-style: none; padding: 0; text-align: left; max-width: 300px; margin: 30px auto; }
+        .subscription-features li { padding: 10px 0; font-size: 16px; }
+        .btn-subscribe { background: white; color: #667eea; padding: 16px 32px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin: 20px 0; width: 90%; }
+        .btn-subscribe:hover { background: #f0f0f0; }
+        .subscription-note { font-size: 13px; opacity: 0.8; margin-top: 15px; }
+        .earnings-card { background: linear-gradient(135deg, #28a745, #20c997); margin: 0 15px 15px; padding: 18px; border-radius: 15px; }
+        .earnings-card h4 { margin: 0 0 5px; font-size: 11px; opacity: 0.8; }
+        .earnings-balance { font-size: 28px; font-weight: bold; margin: 8px 0; }
+        .earnings-note { font-size: 11px; opacity: 0.8; }
+        .sub-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 10px; background: rgba(255,255,255,0.25); color: white; }
+        .requests-section { padding: 0 15px 15px; }
+        .request-card { background: #111; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #222; }
+        .request-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .request-type { padding: 4px 10px; background: #f9d71c; color: #000; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .request-offer { font-size: 18px; font-weight: bold; color: #28a745; }
+        .request-info { font-size: 12px; color: #ccc; margin-bottom: 5px; }
+        .request-meta { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; font-size: 11px; color: #888; }
+        .request-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .distance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; color: white; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .distance-badge.close { background: #28a745; }
+        .distance-badge.medium { background: #ffc107; color: #000; }
+        .distance-badge.far { background: #dc3545; }
+        .distance-badge.unknown { background: #6f42c1; }
+        .cash-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #28a745; color: white; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .passengers-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #17a2b8; color: white; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .currency-badge { padding: 3px 8px; background: #6f42c1; color: white; border-radius: 10px; font-size: 10px; font-weight: 600; }
+        .active-trip { display: none; background: #1a1a1a; margin: 15px; padding: 18px; border-radius: 15px; border: 2px solid #f9d71c; }
+        .active-trip.active { display: block; }
+        .trip-progress { display: flex; justify-content: space-between; margin: 15px 0; }
+        .progress-step { text-align: center; flex: 1; }
+        .progress-step .dot { width: 18px; height: 18px; border-radius: 50%; background: #333; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+        .progress-step.completed .dot { background: #28a745; }
+        .progress-step.current .dot { background: #f9d71c; color: #000; }
+        .step-label { font-size: 10px; color: #888; }
+        .chat-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; }
+        .chat-overlay.active { display: flex; }
+        .chat-header { background: #000; padding: 15px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #f9d71c; }
+        .chat-header .back-btn { background: none; border: none; color: #f9d71c; font-size: 24px; cursor: pointer; }
+        .chat-header .title { flex: 1; }
+        .chat-header .title h3 { margin: 0; font-size: 15px; }
+        .chat-header .title p { margin: 2px 0 0; font-size: 11px; color: #888; }
+        .chat-header .call-btn { background: #28a745; border: none; color: white; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #111; }
+        .chat-message { max-width: 80%; padding: 10px 14px; border-radius: 18px; margin-bottom: 10px; font-size: 14px; }
+        .chat-message.sent { background: #f9d71c; color: #000; margin-left: auto; border-bottom-right-radius: 4px; }
+        .chat-message.received { background: #333; color: white; border-bottom-left-radius: 4px; }
+        .chat-message .time { font-size: 9px; opacity: 0.7; margin-top: 3px; }
+        .chat-input { padding: 15px; background: #000; display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 12px; border: none; border-radius: 25px; background: #222; color: white; font-size: 14px; }
+        .chat-input button { background: #f9d71c; border: none; width: 42px; height: 42px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+        .btn { padding: 12px 18px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #f9d71c; color: #000; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #333; color: white; }
+        .btn-sm { padding: 8px 14px; font-size: 12px; }
+        .btn:disabled { background: #444; color: #666; cursor: not-allowed; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .overlay.active { display: flex; }
+        .overlay-box { background: #1a1a1a; padding: 25px; border-radius: 20px; border: 2px solid #f9d71c; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+        .overlay-box h2 { color: #f9d71c; margin: 0 0 20px; text-align: center; font-size: 18px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 12px; color: #888; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #222; color: white; font-size: 14px; }
+        .input-group input:focus { outline: none; border-color: #f9d71c; }
+        .upload-progress { margin-top: 10px; display: none; }
+        .upload-progress.active { display: block; }
+        .progress-bar { height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: #f9d71c; transition: width 0.3s; }
+        .upload-status { font-size: 11px; color: #888; margin-top: 5px; text-align: center; }
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top-color: #f9d71c; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sidenav { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #111; z-index: 3000; transition: left 0.3s; padding: 20px; }
+        .sidenav.open { left: 0; }
+        .sidenav-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2999; display: none; }
+        .sidenav-overlay.active { display: block; }
+        .sidenav h2 { color: #f9d71c; margin: 0 0 20px; font-size: 18px; }
+        .sidenav a { display: block; color: white; padding: 12px 0; text-decoration: none; border-bottom: 1px solid #222; font-size: 14px; }
+        .sidenav a:hover { color: #f9d71c; }
+        .map-container { height: 180px; margin: 0 15px 15px; border-radius: 15px; overflow: hidden; }
+        #map { width: 100%; height: 100%; background: #333; }
+    </style>
+</head>
+<body>
+<div class="loading" id="loading"><div class="spinner"></div></div>
+<div class="sidenav-overlay" id="sidenavOverlay" onclick="closeNav()"></div>
+<div class="sidenav" id="sidenav">
+    <h2>⚡ Driver</h2>
+    <a href="#" onclick="closeNav()">🏠 Dashboard</a>
+    <a href="#" onclick="showSubscriptionInfo(); closeNav();">💳 Subscription</a>
+    <a href="https://swiftdeal-3cee9.web.app/" style="background:#f9d71c;color:#000;text-align:center;border-radius:8px;margin-top:20px;">🔄 Passenger Mode</a>
+    <div style="border-top:1px solid #333;margin-top:20px;padding-top:15px;">
+        <a href="#" onclick="shareApp(); closeNav();">📤 Share SwiftDeal</a>
+        <a href="terms.html" target="_blank">📜 Terms of Service</a>
+        <a href="privacy.html" target="_blank">🔒 Privacy Policy</a>
+    </div>
+    <a href="#" onclick="logout()" style="color:#dc3545;margin-top:20px;">🚪 Sign Out</a>
+</div>
+
+<div class="overlay" id="authOverlay">
+    <div class="overlay-box">
+        <h2>⚡ SwiftDeal Driver</h2>
+        <div id="signInSection">
+            <p style="color:#888;text-align:center;margin-bottom:20px;font-size:13px;">Sign in with your phone</p>
+            <div class="input-group"><label>Phone Number</label><input type="tel" id="signInPhone" placeholder="+1 876 123 4567"></div>
+            <button class="btn btn-primary" style="width:100%;" onclick="handleSignIn()">SIGN IN</button>
+            <p style="text-align:center;margin-top:15px;color:#888;font-size:13px;">New? <a href="#" onclick="showRegister()" style="color:#f9d71c;">Register</a></p>
+        </div>
+        <div id="registerSection" style="display:none;">
+            <div id="regStep1">
+                <p style="color:#888;text-align:center;margin-bottom:15px;font-size:13px;">Step 1: Basic Info</p>
+                <div class="input-group"><label>Full Name *</label><input type="text" id="regName" placeholder="Your name"></div>
+                <div class="input-group"><label>Email *</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+                <div class="input-group"><label>Phone *</label><input type="tel" id="regPhone" placeholder="+1 876 123 4567"></div>
+                <div class="input-group"><label>Vehicle Type *</label><select id="regVehicleType"><option value="">Select</option><option value="car">🚗 Car</option><option value="suv">🚙 SUV</option><option value="van">🚐 Van</option><option value="motorcycle">🏍️ Motorcycle</option></select></div>
+                <div class="input-group"><label>Vehicle *</label><input type="text" id="regVehicle" placeholder="e.g. Toyota Corolla 2020"></div>
+                <div class="input-group"><label>License Plate *</label><input type="text" id="regPlate" placeholder="ABC 1234"></div>
+                <div style="margin:15px 0;padding:12px;background:#111;border-radius:8px;">
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+                        <input type="checkbox" id="tosCheckbox" style="width:18px;height:18px;margin-top:2px;accent-color:#f9d71c;">
+                        <span style="font-size:12px;color:#888;line-height:1.5;">I agree to the <a href="terms.html" target="_blank" style="color:#f9d71c;">Terms of Service</a> and <a href="privacy.html" target="_blank" style="color:#f9d71c;">Privacy Policy</a>. I confirm I am at least 18 years old and have a valid driver's license.</span>
+                    </label>
+                </div>
+                <button class="btn btn-primary" style="width:100%;" onclick="goToStep2()">NEXT →</button>
+            </div>
+            <div id="regStep2" style="display:none;">
+                <p style="color:#888;text-align:center;margin-bottom:15px;font-size:13px;">Step 2: Upload Documents</p>
+                <p style="color:#f9d71c;text-align:center;margin-bottom:15px;font-size:11px;">📧 Documents will be sent to admin for review</p>
+                <div class="upload-step" id="step1"><div class="upload-step-header"><div class="step-number">1</div><div><div class="step-title">📸 Vehicle Photo</div><div class="step-desc">Front view of your vehicle</div></div></div><div class="upload-preview" id="preview1"><span class="placeholder">No photo</span></div><input type="file" id="file1" accept="image/*" style="display:none" onchange="handleUpload(1,this)"><button class="upload-btn" onclick="document.getElementById('file1').click()">Upload</button></div>
+                <div class="upload-step" id="step2"><div class="upload-step-header"><div class="step-number">2</div><div><div class="step-title">📄 Registration</div><div class="step-desc">Vehicle registration document</div></div></div><div class="upload-preview" id="preview2"><span class="placeholder">No photo</span></div><input type="file" id="file2" accept="image/*" style="display:none" onchange="handleUpload(2,this)"><button class="upload-btn" onclick="document.getElementById('file2').click()">Upload</button></div>
+                <div class="upload-step" id="step3"><div class="upload-step-header"><div class="step-number">3</div><div><div class="step-title">🪪 Government ID</div><div class="step-desc">Driver's license or ID</div></div></div><div class="upload-preview" id="preview3"><span class="placeholder">No photo</span></div><input type="file" id="file3" accept="image/*" style="display:none" onchange="handleUpload(3,this)"><button class="upload-btn" onclick="document.getElementById('file3').click()">Upload</button></div>
+                <div class="upload-step" id="step4"><div class="upload-step-header"><div class="step-number">4</div><div><div class="step-title">🤳 Selfie</div><div class="step-desc">Clear photo of your face</div></div></div><div class="upload-preview" id="preview4"><span class="placeholder">No photo</span></div><input type="file" id="file4" accept="image/*" capture="user" style="display:none" onchange="handleUpload(4,this)"><button class="upload-btn" onclick="document.getElementById('file4').click()">Take Selfie</button></div>
+                <div class="upload-progress" id="uploadProgress"><div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div><div class="upload-status" id="uploadStatus">Preparing...</div></div>
+                <button class="btn btn-success" style="width:100%;margin-top:15px;" onclick="submitReg()" id="submitBtn" disabled>✓ SUBMIT APPLICATION</button>
+                <button class="btn btn-secondary" style="width:100%;margin-top:10px;" onclick="backToStep1()">← Back</button>
+            </div>
+            <p style="text-align:center;margin-top:15px;color:#888;font-size:13px;">Have account? <a href="#" onclick="showSignIn()" style="color:#f9d71c;">Sign In</a></p>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="subscriptionOverlay">
+    <div class="overlay-box">
+        <h2>💳 Subscription Status</h2>
+        <div id="subInfoContent" style="text-align:center;"><p style="color:#888;font-size:13px;">Loading...</p></div>
+        <button class="btn btn-secondary" style="width:100%;margin-top:15px;" onclick="closeSubscriptionInfo()">Close</button>
+    </div>
+</div>
+
+<div class="chat-overlay" id="chatOverlay">
+    <div class="chat-header">
+        <button class="back-btn" onclick="closeChat()">←</button>
+        <div class="title"><h3 id="chatName">Passenger</h3><p id="chatInfo">Trip info</p></div>
+        <button class="call-btn" onclick="callPassenger()">📞</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input"><input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendMsg()"><button onclick="sendMsg()">➤</button></div>
+</div>
+
+<div class="container" id="mainApp" style="display:none;">
+    <div class="header">
+        <button class="menu-btn" onclick="openNav()">☰</button>
+        <h1>⚡ SwiftDeal</h1>
+        <div class="online-indicator" id="onlineIndicator"></div>
+    </div>
+    <div id="pendingState" style="display:none;">
+        <div class="pending-banner"><h3>⏳ Verification Pending</h3><p>Your documents are being reviewed. This usually takes 24-48 hours. You'll receive an email when approved!</p></div>
+        <div class="status-box">
+            <div class="status-item"><span>Vehicle Photo</span><span class="status-badge pending" id="docStatus1">Pending</span></div>
+            <div class="status-item"><span>Registration</span><span class="status-badge pending" id="docStatus2">Pending</span></div>
+            <div class="status-item"><span>Government ID</span><span class="status-badge pending" id="docStatus3">Pending</span></div>
+            <div class="status-item"><span>Selfie</span><span class="status-badge pending" id="docStatus4">Pending</span></div>
+        </div>
+    </div>
+    <div id="subscriptionLockState" style="display:none;">
+        <div class="subscription-card">
+            <h2>🔐 Unlock SwiftDeal Driver Pro</h2>
+            <p>Get unlimited ride requests and start earning today!</p>
+            <div class="subscription-price">$9.99<span>/month</span></div>
+            <ul class="subscription-features">
+                <li>✅ Unlimited ride requests</li>
+                <li>✅ Real-time GPS navigation</li>
+                <li>✅ In-app earnings tracking</li>
+                <li>✅ 24/7 driver support</li>
+                <li>✅ No commission fees — keep 100%</li>
+                <li>✅ Cash payments direct to you</li>
+            </ul>
+            <button class="btn-subscribe" onclick="openGooglePlaySubscription()">💳 Subscribe via Google Play</button>
+            <p class="subscription-note">Cancel anytime. Managed through Google Play.</p>
+        </div>
+    </div>
+    <div id="approvedState" style="display:none;">
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value success">$<span id="earnings">0</span></div><div class="stat-label">Earnings</div></div>
+            <div class="stat-card"><div class="stat-value"><span id="trips">0</span></div><div class="stat-label">Trips</div></div>
+            <div class="stat-card"><div class="stat-value">⭐ <span id="rating">5.0</span></div><div class="stat-label">Rating</div></div>
+        </div>
+        <div class="toggle-card">
+            <div class="toggle-info"><h3 id="toggleLabel">Go Online</h3><p id="toggleSub">Start receiving requests</p></div>
+            <label class="toggle-switch"><input type="checkbox" id="onlineToggle" onchange="toggleOnline()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="earnings-card">
+            <h4>💵 CASH EARNINGS</h4>
+            <div class="earnings-balance">$<span id="totalCashEarnings">0</span></div>
+            <p class="earnings-note">💵 All fares paid in cash — no commission, no deductions</p>
+            <div class="sub-status-badge" id="subBadge">✅ Subscription Active</div>
+        </div>
+        <div class="map-container"><div id="map"></div></div>
+        <div class="active-trip" id="activeTrip">
+            <h4 style="margin:0 0 10px;color:#f9d71c;font-size:14px;">🚗 Active Trip</h4>
+            <div class="trip-progress">
+                <div class="progress-step completed" id="ts1"><div class="dot">✓</div><div class="step-label">Accept</div></div>
+                <div class="progress-step" id="ts2"><div class="dot">2</div><div class="step-label">Pickup</div></div>
+                <div class="progress-step" id="ts3"><div class="dot">3</div><div class="step-label">Trip</div></div>
+                <div class="progress-step" id="ts4"><div class="dot">4</div><div class="step-label">Done</div></div>
+            </div>
+            <div style="background:#222;padding:12px;border-radius:10px;">
+                <p style="margin:0 0 4px;font-size:11px;color:#888;">Passenger</p>
+                <p style="margin:0 0 10px;font-size:14px;font-weight:bold;" id="tripName">-</p>
+                <div id="tripPassengers" style="margin-bottom:10px;"></div>
+                <p style="margin:0 0 4px;font-size:11px;color:#888;">Pickup</p>
+                <p style="margin:0 0 10px;font-size:13px;" id="tripPickup">-</p>
+                <p style="margin:0 0 4px;font-size:11px;color:#888;">Destination</p>
+                <p style="margin:0 0 10px;font-size:13px;" id="tripDest">-</p>
+                <p style="margin:0 0 4px;font-size:11px;color:#888;">Fare</p>
+                <p style="margin:0;font-size:16px;font-weight:bold;color:#28a745;" id="tripFare">-</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#28a745;">💵 Cash payment from passenger</p>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="btn btn-secondary btn-sm" onclick="openChat()">💬 Chat</button>
+                <button class="btn btn-secondary btn-sm" onclick="callPassenger()">📞 Call</button>
+                <button class="btn btn-secondary btn-sm" onclick="navigate()">🗺️ Nav</button>
+            </div>
+            <button class="btn btn-success" style="width:100%;margin-top:12px;" id="tripBtn" onclick="advanceTrip()">ARRIVED</button>
+        </div>
+        <div class="requests-section">
+            <h3 style="margin:0 0 15px;font-size:15px;">📋 Available Requests</h3>
+            <div id="requestsContainer"><p style="text-align:center;color:#666;padding:30px;font-size:13px;">Go online to see requests</p></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places,geometry&loading=async" async defer></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, update, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    const app = initializeApp({apiKey:"AIzaSyCmHg4nOAXC-JaW2wPesh6VJY7v1twiMw4",authDomain:"swiftdeal-3cee9.firebaseapp.com",databaseURL:"https://swiftdeal-3cee9-default-rtdb.firebaseio.com",projectId:"swiftdeal-3cee9",storageBucket:"swiftdeal-3cee9.firebasestorage.app",messagingSenderId:"626252184385",appId:"1:626252184385:web:b525e1b382c72ccdf43fc0"});
+    const db = getDatabase(app), auth = getAuth(app);
+    emailjs.init("YOUR_EMAILJS_PUBLIC_KEY");
+    let driverId=null,driver=null,loc=null,map,marker,watchId=null;
+    let isOnline=false,tripId=null,trip=null,requests=[],chatListen=null;
+    let uploads={1:null,2:null,3:null,4:null},regData={};
+    const saved=localStorage.getItem('swiftDriverId');
+    const CURRENCY_DATA={'JMD':{symbol:'J$',locale:'en-JM'},'USD':{symbol:'$',locale:'en-US'},'GBP':{symbol:'£',locale:'en-GB'},'EUR':{symbol:'€',locale:'de-DE'},'CAD':{symbol:'C$',locale:'en-CA'},'AUD':{symbol:'A$',locale:'en-AU'},'TTD':{symbol:'TT$',locale:'en-TT'},'BBD':{symbol:'Bds$',locale:'en-BB'},'GYD':{symbol:'G$',locale:'en-GY'},'NGN':{symbol:'₦',locale:'en-NG'},'KES':{symbol:'KSh',locale:'en-KE'},'INR':{symbol:'₹',locale:'en-IN'},'JPY':{symbol:'¥',locale:'ja-JP'},'CNY':{symbol:'¥',locale:'zh-CN'},'MXN':{symbol:'MX$',locale:'es-MX'},'BRL':{symbol:'R$',locale:'pt-BR'},'ZAR':{symbol:'R',locale:'en-ZA'},'GHS':{symbol:'GH₵',locale:'en-GH'},'AED':{symbol:'د.إ',locale:'ar-AE'},'SGD':{symbol:'S$',locale:'en-SG'},'HKD':{symbol:'HK$',locale:'zh-HK'},'KRW':{symbol:'₩',locale:'ko-KR'},'THB':{symbol:'฿',locale:'th-TH'},'PHP':{symbol:'₱',locale:'en-PH'},'MYR':{symbol:'RM',locale:'ms-MY'},'IDR':{symbol:'Rp',locale:'id-ID'},'VND':{symbol:'₫',locale:'vi-VN'},'PKR':{symbol:'₨',locale:'en-PK'},'EGP':{symbol:'E£',locale:'ar-EG'},'TRY':{symbol:'₺',locale:'tr-TR'}};
+    function fmt(amount,currency='JMD'){const ci=CURRENCY_DATA[currency]||CURRENCY_DATA['JMD'];try{return new Intl.NumberFormat(ci.locale,{style:'currency',currency:currency,minimumFractionDigits:0,maximumFractionDigits:2}).format(amount);}catch{return `${ci.symbol}${Math.round(amount).toLocaleString()}`;}}
+    // Google Play Subscription
+    window.openGooglePlaySubscription=function(){if(typeof Android!=='undefined'&&Android.purchaseSubscription){Android.purchaseSubscription('swiftdeal_driver_pro');}else{if(confirm('Subscription available in the Android app.\n\nFor testing: Simulate subscription activation?')){activateSubscription();}else{window.open('https://play.google.com/store/apps/details?id=com.apps.swiftdeal','_blank');}}};
+    window.updateSubscriptionStatus=async function(isActive){if(driverId){await update(ref(db,`driverAccounts/${driverId}`),{subscriptionStatus:isActive?'active':'inactive',subscriptionUpdated:Date.now()});}};
+    async function activateSubscription(){if(!driverId)return;await update(ref(db,`driverAccounts/${driverId}`),{subscriptionStatus:'active',subscriptionUpdated:Date.now(),subscriptionStarted:Date.now()});alert('✅ Subscription activated!');}
+    window.showSubscriptionInfo=function(){const c=document.getElementById('subInfoContent');if(driver?.subscriptionStatus==='active'){const s=driver.subscriptionStarted?new Date(driver.subscriptionStarted).toLocaleDateString():'N/A';c.innerHTML=`<div style="background:#1a3a1a;padding:20px;border-radius:12px;margin-bottom:15px;"><p style="font-size:24px;margin:0 0 10px;">✅</p><p style="font-size:16px;font-weight:bold;color:#28a745;margin:0 0 5px;">Active Subscription</p><p style="color:#888;font-size:12px;margin:0;">Since: ${s}</p></div><p style="color:#888;font-size:12px;">$9.99/month • Managed via Google Play</p>`;}else{c.innerHTML=`<div style="background:#3a1a1a;padding:20px;border-radius:12px;margin-bottom:15px;"><p style="font-size:24px;margin:0 0 10px;">🔒</p><p style="font-size:16px;font-weight:bold;color:#dc3545;margin:0 0 5px;">No Active Subscription</p></div><button class="btn btn-primary" style="width:100%;" onclick="openGooglePlaySubscription();closeSubscriptionInfo();">Subscribe $9.99/month</button>`;}document.getElementById('subscriptionOverlay').classList.add('active');document.getElementById('subscriptionOverlay').style.display='flex';};
+    window.closeSubscriptionInfo=function(){document.getElementById('subscriptionOverlay').classList.remove('active');document.getElementById('subscriptionOverlay').style.display='none';};
+    // Auth
+    setTimeout(()=>{if(!driverId){hide('loading');show('authOverlay');}},3000);
+    onAuthStateChanged(auth,async u=>{if(u&&saved){driverId=saved;await loadProfile();hide('loading');hide('authOverlay');}else if(!u)signInAnonymously(auth);else{hide('loading');show('authOverlay');}});
+    function show(id){document.getElementById(id).classList.add('active');document.getElementById(id).style.display='flex';}
+    function hide(id){const el=document.getElementById(id);el.classList.remove('active');el.style.display='none';}
+    window.showSignIn=()=>{document.getElementById('signInSection').style.display='block';document.getElementById('registerSection').style.display='none';};
+    window.showRegister=()=>{document.getElementById('signInSection').style.display='none';document.getElementById('registerSection').style.display='block';document.getElementById('regStep1').style.display='block';document.getElementById('regStep2').style.display='none';};
+    window.goToStep2=()=>{const n=document.getElementById('regName').value.trim(),e=document.getElementById('regEmail').value.trim(),p=document.getElementById('regPhone').value.trim();const vt=document.getElementById('regVehicleType').value,v=document.getElementById('regVehicle').value.trim(),pl=document.getElementById('regPlate').value.trim();if(!n||!e||!p||!vt||!v||!pl){alert('Fill all fields');return;}if(!e.includes('@')){alert('Enter valid email');return;}if(!document.getElementById('tosCheckbox').checked){alert('Please accept the Terms of Service');return;}regData={name:n,email:e,phone:p,vehicleType:vt,vehicle:v,plate:pl,tosAcceptedAt:Date.now()};document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';};
+    window.backToStep1=()=>{document.getElementById('regStep1').style.display='block';document.getElementById('regStep2').style.display='none';};
+    window.handleUpload=async(num,input)=>{const file=input.files[0];if(!file)return;const preview=document.getElementById(`preview${num}`);preview.innerHTML='<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div>';try{const b64=await new Promise((res,rej)=>{const r=new FileReader();r.readAsDataURL(file);r.onload=()=>res(r.result);r.onerror=e=>rej(e);});uploads[num]={name:file.name,data:b64,type:file.type};preview.innerHTML=`<img src="${b64}">`;document.getElementById(`step${num}`).classList.add('completed');document.getElementById('submitBtn').disabled=!(uploads[1]&&uploads[2]&&uploads[3]&&uploads[4]);}catch(e){console.error(e);preview.innerHTML='<span class="placeholder">Upload failed</span>';}};
+    window.submitReg=async()=>{const btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Sending...';const progress=document.getElementById('uploadProgress'),pf=document.getElementById('progressFill'),us=document.getElementById('uploadStatus');progress.classList.add('active');try{us.textContent='Creating account...';pf.style.width='20%';const nr=push(ref(db,'driverAccounts'));driverId=nr.key;await set(nr,{...regData,documents:{vehiclePhoto:'pending_review',registration:'pending_review',govId:'pending_review',selfie:'pending_review'},verified:false,verificationStatus:'pending',subscriptionStatus:'inactive',status:'offline',earnings:0,trips:0,rating:5,createdAt:Date.now()});us.textContent='Sending documents to admin...';pf.style.width='50%';await emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{to_email:"swiftdealrides@gmail.com",driver_name:regData.name,driver_email:regData.email,driver_phone:regData.phone,driver_vehicle:regData.vehicle,driver_plate:regData.plate,driver_vehicle_type:regData.vehicleType,driver_id:driverId,vehicle_photo:uploads[1].data,registration_doc:uploads[2].data,gov_id:uploads[3].data,selfie:uploads[4].data,submission_date:new Date().toLocaleString()});pf.style.width='100%';us.textContent='Application submitted!';localStorage.setItem('swiftDriverId',driverId);setTimeout(()=>{hide('authOverlay');loadProfile();alert('Application submitted! You will receive an email when approved.');},1000);}catch(e){console.error(e);us.textContent='Error submitting.';btn.disabled=false;btn.textContent='✓ SUBMIT APPLICATION';alert('Documents saved. Admin will contact you.');localStorage.setItem('swiftDriverId',driverId);hide('authOverlay');loadProfile();}};
+    window.handleSignIn=async()=>{const phone=document.getElementById('signInPhone').value.trim();if(!phone){alert('Enter phone');return;}const snap=await get(ref(db,'driverAccounts'));const drivers=snap.val()||{};const found=Object.entries(drivers).find(([id,d])=>d.phone===phone);if(found){driverId=found[0];localStorage.setItem('swiftDriverId',driverId);hide('authOverlay');await loadProfile();}else{alert('Not found. Register first.');}};
+    // Profile & State
+    async function loadProfile(){document.getElementById('mainApp').style.display='block';onValue(ref(db,`driverAccounts/${driverId}`),snap=>{driver=snap.val();if(!driver)return;document.getElementById('earnings').textContent=(driver.earnings||0).toLocaleString();document.getElementById('totalCashEarnings').textContent=(driver.earnings||0).toLocaleString();document.getElementById('trips').textContent=driver.trips||0;document.getElementById('rating').textContent=(driver.rating||5).toFixed(1);const toggle=document.getElementById('onlineToggle'),indicator=document.getElementById('onlineIndicator');if(driver.verificationStatus!=='approved'){document.getElementById('pendingState').style.display='block';document.getElementById('subscriptionLockState').style.display='none';document.getElementById('approvedState').style.display='none';toggle.disabled=true;return;}document.getElementById('pendingState').style.display='none';if(driver.subscriptionStatus!=='active'){document.getElementById('subscriptionLockState').style.display='block';document.getElementById('approvedState').style.display='none';toggle.disabled=true;return;}document.getElementById('subscriptionLockState').style.display='none';document.getElementById('approvedState').style.display='block';toggle.disabled=false;isOnline=driver.status==='online';toggle.checked=isOnline;indicator.classList.toggle('online',isOnline);document.getElementById('toggleLabel').textContent=isOnline?'Online':'Go Online';document.getElementById('toggleSub').textContent=isOnline?'Receiving requests':'Start receiving requests';if(isOnline){startLocation();listenRequests();}});initMap();checkTrip();}
+    function initMap(){const check=setInterval(()=>{if(typeof google!=='undefined'&&google.maps){clearInterval(check);map=new google.maps.Map(document.getElementById('map'),{center:{lat:18.1096,lng:-77.2975},zoom:14,disableDefaultUI:true,styles:[{featureType:"poi",stylers:[{visibility:"off"}]}]});}},100);}
+    window.toggleOnline=async()=>{if(!driver||driver.subscriptionStatus!=='active'){alert('Please subscribe to go online.');document.getElementById('onlineToggle').checked=false;return;}isOnline=document.getElementById('onlineToggle').checked;await update(ref(db,`driverAccounts/${driverId}`),{status:isOnline?'online':'offline'});if(isOnline){startLocation();listenRequests();}else{if(watchId)navigator.geolocation.clearWatch(watchId);off(ref(db,'requests'));document.getElementById('requestsContainer').innerHTML='<p style="text-align:center;color:#666;padding:30px;font-size:13px;">Go online to see requests</p>';}};
+    function startLocation(){if(!navigator.geolocation)return;watchId=navigator.geolocation.watchPosition(pos=>{loc={lat:pos.coords.latitude,lng:pos.coords.longitude};update(ref(db,`driverAccounts/${driverId}`),{lat:loc.lat,lng:loc.lng,lastLocationUpdate:Date.now()});if(map){map.setCenter(loc);if(!marker)marker=new google.maps.Marker({position:loc,map,icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="12" fill="#f9d71c" stroke="#000" stroke-width="2"/><text x="15" y="20" text-anchor="middle" font-size="12">🚗</text></svg>'),scaledSize:new google.maps.Size(30,30)}});else marker.setPosition(loc);}},()=>{},{enableHighAccuracy:true,maximumAge:10000});}
+    // Requests sorted by proximity
+    function getDistanceKm(lat1,lng1,lat2,lng2){const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+    function getDistanceBadge(km){if(km===Infinity||isNaN(km))return '<span class="distance-badge unknown">📍 Unknown</span>';if(km<=3)return `<span class="distance-badge close">📍 ${km.toFixed(1)}km</span>`;if(km<=10)return `<span class="distance-badge medium">📍 ${km.toFixed(1)}km</span>`;return `<span class="distance-badge far">📍 ${km.toFixed(1)}km</span>`;}
+    function listenRequests(){onValue(ref(db,'requests'),snap=>{const all=snap.val()||{};requests=Object.entries(all).filter(([id,r])=>r.status==='pending').map(([id,r])=>{let dk=Infinity;if(loc&&r.lat&&r.lng)dk=getDistanceKm(loc.lat,loc.lng,r.lat,r.lng);else if(loc&&r.pickupCoords)dk=getDistanceKm(loc.lat,loc.lng,r.pickupCoords.lat,r.pickupCoords.lng);return[id,{...r,_distanceKm:dk}];}).sort((a,b)=>a[1]._distanceKm-b[1]._distanceKm);renderRequests();});}
+    function renderRequests(){const c=document.getElementById('requestsContainer');if(!requests.length){c.innerHTML='<p style="text-align:center;color:#666;padding:30px;font-size:13px;">No requests right now</p>';return;}c.innerHTML=requests.map(([id,r])=>{const cur=r.currency||'JMD',pt=r.passengers?`👥 ${r.passengers} passenger${r.passengers>1?'s':''}`:'';return `<div class="request-card"><div class="request-header"><span class="request-type">${r.type?.toUpperCase()||'RIDE'}</span><span class="request-offer">${fmt(r.offer,cur)}</span></div><div class="request-info">📍 <strong>From:</strong> ${r.pickup}</div><div class="request-info">🎯 <strong>To:</strong> ${r.destination||'-'}</div><div class="request-meta">${getDistanceBadge(r._distanceKm)}${pt?`<span class="passengers-badge">${pt}</span>`:''}<span class="cash-badge">💵 Cash</span><span class="currency-badge">${cur}</span>${r.country?`<span style="color:#888;">📍 ${r.country}</span>`:''}</div><div class="request-actions"><button class="btn btn-success btn-sm" style="flex:1;" onclick="acceptRequest('${id}')">✓ Accept (${fmt(r.offer,cur)} Cash)</button></div></div>`;}).join('');}
+    window.acceptRequest=async(id)=>{if(!driver||driver.verificationStatus!=='approved'){alert('Not verified');return;}if(driver.subscriptionStatus!=='active'){alert('Please subscribe first.');return;}await update(ref(db,`requests/${id}`),{status:'accepted',driverId,driverName:driver.name,driverPhone:driver.phone,driverVehicle:`${driver.vehicle} (${driver.plate})`,driverRating:driver.rating||5,acceptedAt:Date.now()});tripId=id;listenTrip(id);};
+    function listenTrip(id){onValue(ref(db,`requests/${id}`),snap=>{trip=snap.val();if(trip)updateTripUI();});}
+    function updateTripUI(){if(!trip){document.getElementById('activeTrip').classList.remove('active');return;}document.getElementById('activeTrip').classList.add('active');document.getElementById('tripName').textContent=trip.name;document.getElementById('tripPickup').textContent=trip.pickup;document.getElementById('tripDest').textContent=trip.destination;document.getElementById('chatName').textContent=trip.name;document.getElementById('chatInfo').textContent=`${trip.pickup} → ${trip.destination}`;const cur=trip.currency||'JMD';document.getElementById('tripFare').textContent=fmt(trip.offer,cur);const pd=document.getElementById('tripPassengers');pd.innerHTML=trip.passengers&&trip.passengers>0?`<span class="passengers-badge">👥 ${trip.passengers} passenger${trip.passengers>1?'s':''}</span>`:'';const steps=['accepted','confirmed','arrived','in_progress','completed'],curr=steps.indexOf(trip.status);for(let i=1;i<=4;i++){const el=document.getElementById(`ts${i}`);el.classList.remove('completed','current');if(i<=curr+1)el.classList.add('completed');if(i===curr+2)el.classList.add('current');}const btn=document.getElementById('tripBtn');switch(trip.status){case 'accepted':case 'confirmed':btn.textContent='ARRIVED AT PICKUP';btn.onclick=()=>advTrip('arrived');break;case 'arrived':btn.textContent='START TRIP';btn.onclick=()=>advTrip('in_progress');break;case 'in_progress':btn.textContent='COMPLETE - COLLECT CASH';btn.onclick=()=>completeTrip();break;case 'completed':resetTrip();break;}}
+    window.advanceTrip=()=>advTrip(trip?.status==='arrived'?'in_progress':'arrived');
+    async function advTrip(s){if(tripId)await update(ref(db,`requests/${tripId}`),{status:s,[`${s}At`]:Date.now()});}
+    async function completeTrip(){if(!tripId||!trip)return;const fare=trip.offer||0,cur=trip.currency||'JMD',fareJMD=trip.offerJMD||fare;try{await update(ref(db,`requests/${tripId}`),{status:'completed',completedAt:Date.now(),paymentMethod:'cash',paymentStatus:'cash_collected'});await update(ref(db,`driverAccounts/${driverId}`),{earnings:(driver.earnings||0)+fareJMD,trips:(driver.trips||0)+1});alert(`✅ Trip Complete!\n\n💵 Collect ${fmt(fare,cur)} cash from passenger.\nYou keep 100% — no commission!`);resetTrip();}catch(e){console.error(e);alert('Error completing trip');}}
+    function resetTrip(){if(tripId)off(ref(db,`requests/${tripId}`));tripId=null;trip=null;document.getElementById('activeTrip').classList.remove('active');renderRequests();}
+    async function checkTrip(){const snap=await get(ref(db,'requests'));const r=snap.val()||{};for(const[id,req]of Object.entries(r)){if(req.driverId===driverId&&['accepted','confirmed','arrived','in_progress'].includes(req.status)){tripId=id;listenTrip(id);break;}}}
+    window.openChat=()=>{if(!tripId)return;document.getElementById('chatOverlay').classList.add('active');loadChat();};
+    window.closeChat=()=>{document.getElementById('chatOverlay').classList.remove('active');if(chatListen){off(ref(db,`chats/${tripId}`));chatListen=null;}};
+    function loadChat(){if(!tripId)return;chatListen=onValue(ref(db,`chats/${tripId}/messages`),snap=>{const msgs=snap.val()||{};const c=document.getElementById('chatMessages');c.innerHTML=Object.values(msgs).sort((a,b)=>a.timestamp-b.timestamp).map(m=>`<div class="chat-message ${m.sender==='driver'?'sent':'received'}">${m.text}<div class="time">${new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`).join('');c.scrollTop=c.scrollHeight;});}
+    window.sendMsg=async()=>{const input=document.getElementById('chatInput'),txt=input.value.trim();if(!txt||!tripId)return;await push(ref(db,`chats/${tripId}/messages`),{text:txt,sender:'driver',timestamp:Date.now()});input.value='';};
+    window.callPassenger=()=>{if(trip?.phone)window.location.href=`tel:${trip.phone}`;};
+    window.navigate=()=>{if(!trip)return;const d=trip.status==='in_progress'?trip.destination:trip.pickup;window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(d)}`,'_blank');};
+    window.shareApp=async()=>{const sd={title:'SwiftDeal - Drive & Earn',text:'Join SwiftDeal as a driver! No commission — keep 100% of fares. 🚗💰',url:'https://swiftdeal-3cee9.web.app/driver.html'};if(navigator.share){try{await navigator.share(sd);}catch(err){if(err.name!=='AbortError')copyToClipboard(sd.url);}}else{copyToClipboard(sd.url);}};
+    function copyToClipboard(text){navigator.clipboard.writeText(text).then(()=>{alert('Link copied!');}).catch(()=>{prompt('Copy this link:',text);});}
+    window.openNav=()=>{document.getElementById('sidenav').classList.add('open');document.getElementById('sidenavOverlay').classList.add('active');};
+    window.closeNav=()=>{document.getElementById('sidenav').classList.remove('open');document.getElementById('sidenavOverlay').classList.remove('active');};
+    window.logout=async()=>{if(!confirm('Sign out?'))return;if(watchId)navigator.geolocation.clearWatch(watchId);if(driverId)await update(ref(db,`driverAccounts/${driverId}`),{status:'offline'});localStorage.removeItem('swiftDriverId');await signOut(auth);location.reload();};
+</script>
+</body>
+</html>
