@@ -215,5 +215,5 @@ dependencies {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:billing:2.7.0-alpha02'
+    implementation 'com.google.androidbrowserhelper:billing:1.0.0-alpha08'
 }
