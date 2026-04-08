@@ -50,7 +50,7 @@ jobs:
 
       - name: Auto-Bump Version Code
         run: |
-          NEW_CODE=$((130 + ${{ github.run_number }}))
+          NEW_CODE=$((131 + ${{ github.run_number }}))
           NEW_NAME="9.0.${NEW_CODE}"
           echo "Setting versionCode=$NEW_CODE versionName=$NEW_NAME"
           sed -i "s/versionCode [0-9]*/versionCode $NEW_CODE/" twa-source/app/build.gradle
