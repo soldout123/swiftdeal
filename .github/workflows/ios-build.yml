@@ -35,9 +35,23 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
-      - name: Install CocoaPods
+      - name: Install CocoaPods & Shield Libraries
         run: |
           cd SwiftDeal_iOS_Source/src
+          
+          cat << 'POD_EOF' >> Podfile
+          
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+                config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+                config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ''
+              end
+            end
+          end
+          POD_EOF
+          
           pod install
 
       - name: Build and Archive
