@@ -43,11 +43,19 @@ jobs:
       - name: Build and Archive
         run: |
           cd SwiftDeal_iOS_Source/src
+          
+          # Automatically find the workspace and scheme names!
+          WORKSPACE=$(ls -d *.xcworkspace | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          
+          echo "Building Workspace: $WORKSPACE"
+          echo "Using Scheme: $SCHEME"
+
           xcodebuild archive \
-            -workspace SwiftDeal.xcworkspace \
-            -scheme SwiftDeal \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
             -configuration Release \
-            -archivePath $PWD/build/SwiftDeal.xcarchive \
+            -archivePath $PWD/build/App.xcarchive \
             CODE_SIGN_STYLE="Manual" \
             PROVISIONING_PROFILE_SPECIFIER="SwiftDeal App Store Profile" \
             CODE_SIGN_IDENTITY="Apple Distribution"
@@ -78,7 +86,7 @@ jobs:
           PLIST_EOF
           
           xcodebuild -exportArchive \
-            -archivePath $PWD/build/SwiftDeal.xcarchive \
+            -archivePath $PWD/build/App.xcarchive \
             -exportOptionsPlist exportOptions.plist \
             -exportPath $PWD/build/export
 
