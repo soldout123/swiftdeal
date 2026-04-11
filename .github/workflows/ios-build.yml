@@ -58,7 +58,8 @@ jobs:
             -archivePath $PWD/build/App.xcarchive \
             CODE_SIGN_STYLE="Manual" \
             PROVISIONING_PROFILE_SPECIFIER="SwiftDeal App Store Profile" \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PRODUCT_BUNDLE_IDENTIFIER="com.swiftdeal.app"
 
       - name: Export IPA
         run: |
