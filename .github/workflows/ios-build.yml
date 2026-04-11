@@ -48,7 +48,6 @@ jobs:
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           PROJECT=$(ls -d *.xcodeproj | head -1)
           
-          # Inject signing silently into the main project file
           cat << RUBY_EOF > configure_signing.rb
           require 'xcodeproj'
           project = Xcodeproj::Project.open("#{ARGV[0]}")
@@ -66,9 +65,6 @@ jobs:
           
           ruby configure_signing.rb "$PROJECT"
           
-          echo "Building Workspace: $WORKSPACE"
-          
-          # Run a clean build with NO screaming command line overrides
           xcodebuild archive \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
@@ -80,7 +76,6 @@ jobs:
         run: |
           cd SwiftDeal_iOS_Source/src
           
-          # Using the updated 'app-store-connect' method
           cat << 'PLIST_EOF' > exportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -115,3 +110,13 @@ jobs:
         with:
           name: SwiftDeal-iOS-Release
           path: SwiftDeal_iOS_Source/src/build/export/*.ipa
+
+      - name: Upload to App Store Connect (TestFlight)
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          cd SwiftDeal_iOS_Source/src
+          IPA_PATH=$(ls build/export/*.ipa | head -n 1)
+          echo "Uploading $IPA_PATH to App Store Connect..."
+          xcrun altool --upload-app -f "$IPA_PATH" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
