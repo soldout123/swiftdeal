@@ -59,7 +59,8 @@ jobs:
             CODE_SIGN_STYLE="Manual" \
             PROVISIONING_PROFILE_SPECIFIER="SwiftDeal App Store Profile" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PRODUCT_BUNDLE_IDENTIFIER="com.swiftdeal.app"
+            PRODUCT_BUNDLE_IDENTIFIER="com.swiftdeal.app" \
+            DEVELOPMENT_TEAM="8R8TRHFW7B"
 
       - name: Export IPA
         run: |
@@ -71,6 +72,8 @@ jobs:
           <dict>
               <key>method</key>
               <string>app-store</string>
+              <key>teamID</key>
+              <string>8R8TRHFW7B</string>
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.swiftdeal.app</key>
