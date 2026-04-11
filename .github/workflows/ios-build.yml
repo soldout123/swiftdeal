@@ -44,7 +44,6 @@ jobs:
         run: |
           cd SwiftDeal_iOS_Source/src
           
-          # Automatically find the workspace and scheme names!
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
           
@@ -54,6 +53,7 @@ jobs:
           xcodebuild archive \
             -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
+            -destination "generic/platform=iOS" \
             -configuration Release \
             -archivePath $PWD/build/App.xcarchive \
             CODE_SIGN_STYLE="Manual" \
