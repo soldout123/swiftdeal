@@ -24,7 +24,7 @@
 
         <meta-data
             android:name="android.support.customtabs.trusted.LOCATION_DELEGATION_ENABLED"
-            android:value="true" />
+            android:value="false" />
 
         <meta-data
             android:name="asset_statements"
