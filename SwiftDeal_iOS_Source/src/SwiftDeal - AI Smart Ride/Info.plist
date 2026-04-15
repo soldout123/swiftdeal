@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Capture Audio by user request</string>
+	<string>SwiftDeal uses the microphone for in-app voice calls between passengers and drivers, and for the AI Voice Assistant that lets you book rides hands-free.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Track current location by user request</string>
+	<string>SwiftDeal uses your location to find nearby drivers, set your pickup point, calculate fares, navigate to your destination, and let you share your live trip with friends and family for safety.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Capture Video by user request</string>
+	<string>SwiftDeal uses the camera so drivers can upload verification documents (driver's licence, vehicle registration, insurance, profile photo) and so passengers and drivers can share photos in the in-app chat.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -75,50 +75,4 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>armv7</string>
-	</array>
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleDefault</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	<key>WKAppBoundDomains</key>
-	<array>
-		<string>swiftdeal-3cee9.web.app</string>
-	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	</array>
-	<key>UIApplicationShortcutItems</key>
-<array>
-		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>https://swiftdeal-3cee9.web.app/index.html</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Book a Ride</string>
-		</dict>
-		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>https://swiftdeal-3cee9.web.app/driver.html</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Driver Dashboard</string>
-		</dict></array>
-</dict>
-</plist>
+	<arr
