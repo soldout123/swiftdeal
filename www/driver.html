@@ -410,6 +410,66 @@
 <!-- SECURITY & ANTI-TAMPERING -->
 <script>
 (function(){
+    /* ============================================================
+       iOS APP STORE COMPLIANCE
+       Hides wallet top-up UI on iOS (no StoreKit IAP in v1.0).
+       Driver commission settled outside the app via bank transfer.
+       Will add real StoreKit IAP in v1.1.
+       ============================================================ */
+    window.SWIFTDEAL_IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (window.SWIFTDEAL_IS_IOS) {
+        // CSS rules to hide all wallet top-up UI before it ever paints
+        var iosHideCss = document.createElement('style');
+        iosHideCss.textContent = `
+            #walletOverlay,
+            #walletLockState,
+            .wallet-card,
+            .wallet-lock-card,
+            .wallet-topup-grid,
+            .btn-topup,
+            .topup-option,
+            #topupGrid,
+            #btnTopup,
+            #customTopup,
+            #walletMinDisplay {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(iosHideCss);
+
+        // After DOM loads, hide menu links and dashboard top-up buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide the "Wallet & Top Up" link in the side menu
+            document.querySelectorAll('a').forEach(function(link) {
+                var t = (link.textContent || '').trim();
+                if (t.indexOf('Wallet') !== -1 || t.indexOf('Top Up') !== -1 || t.indexOf('top up') !== -1) {
+                    link.style.display = 'none';
+                }
+            });
+            // Hide any "Top Up" button text on the dashboard
+            document.querySelectorAll('button').forEach(function(btn) {
+                var t = (btn.textContent || '').trim();
+                if (t.indexOf('Top Up') !== -1 || t.indexOf('TOP UP') !== -1 || t.indexOf('top up') !== -1) {
+                    btn.style.display = 'none';
+                }
+            });
+            // Hide cash earnings card "Top Up" pill button specifically
+            document.querySelectorAll('[onclick*="openWalletPanel"]').forEach(function(el) {
+                el.style.display = 'none';
+            });
+        });
+
+        // Stub wallet functions so any leftover call is a polite no-op
+        window.openWalletPanel = function() {
+            alert('SwiftDeal driver commission is settled via bank transfer on iOS. Contact swiftdealrides@gmail.com for support.');
+        };
+        window.closeWalletPanel = function() {};
+        window.purchaseTopup = function() {};
+        window.selectCustomTopup = function() {};
+    }
+
     /* Console warning */
     if (window.console) {
         console.log('%c⚠️ STOP!', 'color:red;font-size:50px;font-weight:bold;text-shadow:2px 2px #000');
@@ -1568,7 +1628,8 @@
     // ═══ [FIX 3] ONLINE TOGGLE — with localStorage persistence ═══
     window.toggleOnline = async () => {
         const hasCompleted = (driver?.ridesCompleted || 0) > 0;
-        if (!driver || (hasCompleted && (driver.walletBalance || 0) <= 0)) {
+        // iOS: bypass wallet check (no in-app top-up available; commission settled via bank transfer)
+        if (!window.SWIFTDEAL_IS_IOS && (!driver || (hasCompleted && (driver.walletBalance || 0) <= 0))) {
             alert('Your wallet is empty. Please top up to go online.'); document.getElementById('onlineToggle').checked = false; openWalletPanel(); return;
         }
         isOnline = document.getElementById('onlineToggle').checked;
@@ -1578,7 +1639,7 @@
 
     async function toggleOnlineInternal(goOnline) {
         /* Anti-cheat: re-verify wallet from server before going online */
-        if (goOnline && driverId) {
+        if (goOnline && driverId && !window.SWIFTDEAL_IS_IOS) {
             const wSnap = await get(ref(db, 'driverAccounts/' + driverId));
             const wData = wSnap.val();
             const hasRides = (wData?.ridesCompleted || 0) > 0;
@@ -1900,12 +1961,14 @@
     window.acceptRequest = async (id) => {
         clearPreview();
         if (!driver || driver.verificationStatus !== 'approved') { alert('Not verified yet'); return; }
-        /* Anti-cheat: re-verify wallet balance from server before accepting */
-        const freshSnap = await get(ref(db, 'driverAccounts/' + driverId));
-        const freshDriver = freshSnap.val();
-        const freshHasRides = (freshDriver?.ridesCompleted || 0) > 0;
-        // Allow first-time drivers (no rides yet) regardless of balance — block only if they owe from a prior ride
-        if (!freshDriver || (freshHasRides && (freshDriver.walletBalance || 0) <= 0)) { alert('Wallet empty — please top up to accept rides.'); openWalletPanel(); return; }
+        /* Anti-cheat: re-verify wallet balance from server before accepting (skip on iOS) */
+        if (!window.SWIFTDEAL_IS_IOS) {
+            const freshSnap = await get(ref(db, 'driverAccounts/' + driverId));
+            const freshDriver = freshSnap.val();
+            const freshHasRides = (freshDriver?.ridesCompleted || 0) > 0;
+            // Allow first-time drivers (no rides yet) regardless of balance — block only if they owe from a prior ride
+            if (!freshDriver || (freshHasRides && (freshDriver.walletBalance || 0) <= 0)) { alert('Wallet empty — please top up to accept rides.'); openWalletPanel(); return; }
+        }
         await update(ref(db, `requests/${id}`), {
             status: 'driver_offered', driverId, driverName: driver.name, driverPhone: driver.phone,
             driverVehicle: `${driver.vehicle} (${driver.plate})`, driverRating: driver.rating || 5, offeredAt: Date.now()

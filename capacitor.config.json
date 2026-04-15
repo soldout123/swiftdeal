@@ -1,0 +1,24 @@
+{
+  "appId": "com.swiftdeal.app",
+  "appName": "SwiftDeal",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://swiftdeal-3cee9.web.app",
+    "cleartext": true
+  },
+  "plugins": {
+    "Geolocation": {
+      "permissions": ["location"]
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

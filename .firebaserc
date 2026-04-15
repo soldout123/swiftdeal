@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "swiftdeal-3cee9"
+  },
+  "targets": {
+    "swiftdeal-3cee9": {
+      "hosting": {
+        "app-site": [
+          "swiftdeal-3cee9"
+        ],
+        "driver-site": [
+          "swiftdeal-driver"
+        ],
+        "admin-site": [
+          "swiftdeal-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

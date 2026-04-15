@@ -430,6 +430,39 @@
         });
     })();
     </script>
+
+    <script>
+    document.addEventListener('touchstart', function() {
+        if (window.speechSynthesis) {
+            var unlock = new SpeechSynthesisUtterance('');
+            unlock.volume = 0;
+            window.speechSynthesis.speak(unlock);
+        }
+    }, { once: true });
+    </script>
+
+    <script>
+    document.addEventListener('click', function unlockAudio() {
+        if(window.audioUnlocked) return;
+        window.audioUnlocked = true;
+        
+        // 1. Unlock AI Speech Engine
+        var msg = new SpeechSynthesisUtterance(' ');
+        msg.volume = 0;
+        window.speechSynthesis.speak(msg);
+        
+        // 2. Play silent background frequency to bypass Autoplay blockers
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            var ctx = new AudioContext();
+            var osc = ctx.createOscillator();
+            osc.frequency.value = 0; // Silent
+            osc.connect(ctx.destination);
+            osc.start(0);
+        }
+        document.removeEventListener('click', unlockAudio);
+    }, {once:true, capture:true});
+    </script>
 </head>
 <body>
 <script>window._swiftVapidKey="BPccwJzzFHAAk9FT7bkvddhdnht9kh20ia_kgK5eJQJT67nGYUN0jIOaHRffDO81nhAYtHyrP3xXwG8jnSrbrOY";</script>

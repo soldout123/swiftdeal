@@ -1,0 +1,29 @@
+{
+  "name": "swiftdeal",
+  "version": "2.0.0",
+  "description": "SwiftDeal - Global Transport & Vehicle Rental Platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo \"Build complete\"",
+    "deploy": "firebase deploy --only hosting"
+  },
+  "keywords": [
+    "ride-sharing",
+    "transport",
+    "rental",
+    "courier",
+    "jamaica",
+    "swiftdeal"
+  ],
+  "author": "SwiftDeal",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.0.1",
+    "@capacitor/cli": "^8.0.1",
+    "@capacitor/core": "^8.0.1",
+    "@capacitor/geolocation": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0"
+  }
+}

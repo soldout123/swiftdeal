@@ -1,0 +1,128 @@
+{
+  "general": {
+    "userAgentRegexes": [],
+    "replaceStrings": [],
+    "publicKey": "weewnzz",
+    "deviceRegKey": "47gkpaa0f8wmcr6d4hjkdwu1eg",
+    "appName": "SwiftDeal",
+    "initialUrl": "https://swiftdeal-3cee9.web.app",
+    "keepScreenOn": true,
+    "screenOrientation": {
+      "iphone": "portrait",
+      "ipad": "unspecified",
+      "androidPhone": "portrait",
+      "androidTablet": "unspecified"
+    },
+    "enableWindowOpen": true,
+    "userAgentAdd": "median",
+    "forceUserAgent": "",
+    "iosUserAgentAdd": "median",
+    "iosForceUserAgent": "",
+    "androidUserAgentAdd": "median",
+    "androidForceUserAgent": "",
+    "languages": [],
+    "nativeBridgeUrls": [
+      "https://swiftdeal-3cee9.web.app/*"
+    ],
+    "iosBundleId": "com.swiftdeal.app",
+    "androidPackageName": "com.swiftdeal.app",
+    "androidSigningKey": "release",
+    "iosCustomHeaders": {},
+    "androidCustomHeaders": {},
+    "injectMedianJS": true,
+    "forceSessionCookieExpiry": 0
+  },
+  "navigation": {
+    "sidebarNavigation": {
+      "menus": [
+        {
+          "active": true,
+          "name": "default",
+          "items": [
+            {
+              "url": "https://swiftdeal-3cee9.web.app",
+              "label": "🚕 Passenger Mode",
+              "icon": "fas fa-car"
+            },
+            {
+              "url": "https://swiftdeal-3cee9.web.app/driver.html",
+              "label": "🚗 Driver Mode",
+              "icon": "fas fa-id-card"
+            },
+            {
+              "isGrouping": true,
+              "subLinks": [
+                {
+                  "url": "https://swiftdeal-3cee9.web.app/#ride",
+                  "label": "🚕 Book a Ride"
+                },
+                {
+                  "url": "https://swiftdeal-3cee9.web.app/#courier",
+                  "label": "📦 Send Package"
+                },
+                {
+                  "url": "https://swiftdeal-3cee9.web.app/#rent",
+                  "label": "🔑 Rent Vehicle"
+                }
+              ],
+              "label": "📋 Services"
+            },
+            {
+              "url": "javascript:shareApp()",
+              "label": "📢 Share SwiftDeal",
+              "icon": "fas fa-share"
+            },
+            {
+              "url": "https://wa.me/18763351489?text=Hi,%20I%20need%20help%20with%20SwiftDeal",
+              "label": "📞 Support",
+              "icon": "fas fa-headset"
+            }
+          ]
+        }
+      ]
+    },
+    "tabNavigation": {
+      "tabSelectionStyle": "none",
+      "menus": [
+        {
+          "active": true,
+          "name": "main",
+          "items": [
+            {
+              "url": "https://swiftdeal-3cee9.web.app",
+              "label": "Ride",
+              "icon": "fas fa-car"
+            },
+            {
+              "url": "https://swiftdeal-3cee9.web.app/driver.html",
+              "label": "Drive",
+              "icon": "fas fa-steering-wheel"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "permissions": {
+    "usesGeolocation": true,
+    "androidDownloadToPublicStorage": true
+  },
+  "styling": {
+    "iosTheme": "dark",
+    "androidTheme": "dark",
+    "tintColor": "#f9d71c",
+    "titleColor": "#ffffff",
+    "navigationTitleColor": "#f9d71c",
+    "tabBarBackgroundColor": "#000000",
+    "tabBarTintColor": "#f9d71c"
+  },
+  "services": {
+    "oneSignalPushNotifications": {
+      "active": false,
+      "applicationId": ""
+    },
+    "firebaseAnalytics": {
+      "active": true
+    }
+  }
+}
