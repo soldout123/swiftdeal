@@ -1,6 +1,0 @@
-{
-  "capacitor.config.json": "{\n  \"appId\": \"com.swiftdeal.app\",\n  \"appName\": \"SwiftDeal\",\n  \"webDir\": \"www\",\n  \"bundledWebRuntime\": false\n}",
-  "appId": "com.swiftdeal.app",
-  "appName": "SwiftDeal",
-  "webDir": "www"
-}
