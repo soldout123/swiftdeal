@@ -368,7 +368,7 @@
                     navigator.geolocation.getCurrentPosition(
                         function(pos){ console.log('Location granted'); },
                         function(err){ console.log('Upfront location probe err:', err.code); },
-                        {enableHighAccuracy:false, timeout:10000}
+                        {enableHighAccuracy:false, timeout:15000}
                     );
                 }
                 
@@ -1561,8 +1561,8 @@
                     if(d.latitude&&d.longitude)geocodeCountry({lat:d.latitude,lng:d.longitude});
                     else useTimezone();
                 }).catch(()=>useTimezone());
-            },{enableHighAccuracy:false,timeout:15000,maximumAge:0});
-        },{enableHighAccuracy:false,timeout:15000,maximumAge:0});
+            },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
+        },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
     }
 
     // ─── MAP ───
@@ -1617,13 +1617,13 @@
                             fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
                                 if(d.latitude&&d.longitude){map.setCenter({lat:d.latitude,lng:d.longitude});map.setZoom(13);}
                             }).catch(()=>{});
-                        },{enableHighAccuracy:false,timeout:10000,maximumAge:30000});
-                    },{enableHighAccuracy:false,timeout:20000,maximumAge:0});
+                        },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
+                    },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
 
                     navigator.geolocation.watchPosition(pos=>{
                         showDriverPos(pos);
                         loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
-                    },()=>{},{enableHighAccuracy:false,timeout:30000,maximumAge:0});
+                    },()=>{},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
                 }
             }
         }, 200);
@@ -1690,7 +1690,7 @@
                     });
                 } else marker.setPosition(loc);
             }
-        }, () => {}, { enableHighAccuracy: false, maximumAge: 0 });
+        }, () => {}, { enableHighAccuracy: false, maximumAge:5000 });
     }
     function stopLocation() {
         if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }

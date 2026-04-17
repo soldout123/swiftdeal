@@ -407,7 +407,7 @@
                     navigator.geolocation.getCurrentPosition(
                         function(pos){ console.log('Location granted'); },
                         function(err){ console.log('Upfront location probe err:', err.code); },
-                        {enableHighAccuracy:false, timeout:10000}
+                        {enableHighAccuracy:false, timeout:15000}
                     );
                 }
                 
@@ -1398,10 +1398,10 @@
                         if(btn){btn.classList.remove('loading');btn.innerHTML='<span>📍</span> Use Current Location';}
                         showToast('Could not get location — check GPS is on','error');
                     },
-                    {enableHighAccuracy:false,timeout:10000,maximumAge:30000}
+                    {enableHighAccuracy:false,timeout:15000,maximumAge:5000}
                 );
             },
-            {enableHighAccuracy:false,timeout:15000,maximumAge:0}
+            {enableHighAccuracy:false,timeout:15000,maximumAge:5000}
         );
     };
 
@@ -2070,7 +2070,7 @@
                         if (st === 'OK' && r[0]) document.getElementById('ridePickup').value = r[0].formatted_address;
                         resolve();
                     });
-                }, () => resolve(), {enableHighAccuracy: false, timeout: 10000, maximumAge: 0});
+                }, () => resolve(), {enableHighAccuracy: false, timeout:15000, maximumAge:5000});
             });
         }
 
@@ -2646,7 +2646,7 @@
             /* Start refiner once we have a fix */
             if(!watchStarted){
                 watchStarted=true;
-                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:30000,maximumAge:0});
+                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
             }
         }
 
@@ -2671,7 +2671,7 @@
                     }
                 }
                 /* code 2 POSITION_UNAVAILABLE — just let watchPosition keep trying */
-            }, {enableHighAccuracy:false, timeout:20000, maximumAge:0});
+            }, {enableHighAccuracy:false, timeout:15000, maximumAge:5000});
         }
 
         tryOnce();
