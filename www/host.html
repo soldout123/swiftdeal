@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftDeal Admin Panel</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{--primary:#f9d71c;--dark:#000;--card:#1a1a1a;--card2:#111;--success:#00c853;--danger:#ff1744;--warning:#ffc107;--gray:#888;--radius:14px}
+        body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#fff;-webkit-font-smoothing:antialiased}
+        .container{max-width:1100px;margin:0 auto;padding:20px}
+        .header{background:linear-gradient(135deg,#000,#0d0d0d);padding:24px;border-radius:18px;margin-bottom:28px;border:2px solid var(--primary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+        .header h1{color:var(--primary);font-size:26px;font-weight:800}
+        .header p{color:var(--gray);margin-top:4px;font-size:13px}
+        .header-time{color:var(--gray);font-size:12px;text-align:right}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+        .stat{background:var(--card);padding:22px;border-radius:var(--radius);text-align:center;border:1px solid #222;transition:transform .2s}
+        .stat:hover{transform:translateY(-2px)}
+        .stat-num{font-size:38px;font-weight:800;margin-bottom:4px}
+        .stat-label{font-size:12px;color:var(--gray);font-weight:600}
+        .admin-tabs{display:flex;gap:8px;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+        .admin-tab{padding:10px 22px;background:var(--card);border:1.5px solid #333;border-radius:25px;color:#888;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+        .admin-tab.active{background:var(--primary);color:#000;border-color:var(--primary)}
+        .admin-tab .tab-count{background:rgba(0,0,0,.2);padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px}
+        .section-title{color:var(--primary);font-size:18px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+        .tab-panel{display:none}
+        .tab-panel.active{display:block}
+        .driver-card{background:var(--card);padding:20px;border-radius:var(--radius);margin-bottom:14px;border:2px solid #222;transition:all .25s}
+        .driver-card:hover{border-color:var(--primary);box-shadow:0 8px 30px rgba(249,215,28,.06)}
+        .driver-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px}
+        .driver-card h4{color:var(--primary);font-size:16px;font-weight:700}
+        .status-badge{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700}
+        .badge-pending{background:var(--warning);color:#000}
+        .badge-approved{background:var(--success);color:#fff}
+        .badge-rejected{background:var(--danger);color:#fff}
+        .driver-card-body p{margin:4px 0;color:#bbb;font-size:13px}
+        .driver-card-body p strong{color:#ddd}
+        .driver-card-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+        .btn{padding:10px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;transition:transform .1s}
+        .btn:active{transform:scale(.97)}
+        .btn-primary{background:var(--primary);color:#000}
+        .btn-success{background:var(--success);color:#fff}
+        .btn-danger{background:var(--danger);color:#fff}
+        .btn-outline{background:transparent;color:#ccc;border:1.5px solid #444}
+        .btn-sm{padding:8px 14px;font-size:12px}
+        .modal-overlay{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.92);overflow:auto;backdrop-filter:blur(8px)}
+        .modal-overlay.active{display:block}
+        .modal-content{background:#fff;margin:2% auto;padding:0;border-radius:22px;max-width:950px;color:#000;overflow:hidden}
+        .modal-header{background:linear-gradient(135deg,#000,#111);padding:22px 28px;display:flex;justify-content:space-between;align-items:center}
+        .modal-header h2{color:var(--primary);font-size:20px;font-weight:800}
+        .modal-close{background:none;border:none;color:#888;font-size:28px;cursor:pointer;padding:4px 8px;border-radius:8px}
+        .modal-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+        .modal-body{padding:28px}
+        .driver-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;background:#f7f7f7;padding:22px;border-radius:14px;margin-bottom:24px}
+        .info-item{font-size:13px}
+        .info-item .info-label{color:#888;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+        .info-item .info-value{color:#222;font-weight:600;font-size:14px;word-break:break-all}
+        .docs-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .docs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+        .doc-card{border:2px solid #e8e8e8;border-radius:14px;overflow:hidden;transition:border-color .2s}
+        .doc-card:hover{border-color:var(--primary)}
+        .doc-card-header{padding:12px 16px;background:#f9f9f9;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+        .doc-card-header .doc-status{margin-left:auto;font-size:11px;font-weight:600}
+        .doc-card-body{position:relative;height:220px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+        .doc-card-body img{width:100%;height:100%;object-fit:cover}
+        .doc-card-body .no-doc{color:#999;font-size:13px;text-align:center;padding:20px}
+        .doc-card-body .zoom-hint{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:600;opacity:0;transition:opacity .2s}
+        .doc-card-body:hover .zoom-hint{opacity:1}
+        .image-viewer{display:none;position:fixed;z-index:2000;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);justify-content:center;align-items:center;padding:20px;cursor:zoom-out}
+        .image-viewer.active{display:flex}
+        .image-viewer img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:12px}
+        .image-viewer-label{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 24px;border-radius:12px;font-size:14px;font-weight:700}
+        .image-viewer-close{position:fixed;top:20px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:28px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .modal-actions{display:flex;gap:14px;margin-top:4px}
+        .modal-actions .btn{flex:1;padding:16px;font-size:15px}
+        #rejectForm{display:none;margin-top:20px;background:#fff5f5;padding:20px;border-radius:14px;border:1.5px solid #ffcdd2}
+        #rejectForm h4{margin-bottom:10px;color:var(--danger);font-weight:700}
+        #rejectionReason{width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;min-height:80px}
+        #rejectionReason:focus{outline:none;border-color:var(--primary)}
+        .btn-confirm-reject{background:var(--danger);color:#fff;padding:13px 24px;border-radius:10px;border:none;font-weight:700;cursor:pointer;margin-top:12px;font-family:inherit}
+        .empty-state{text-align:center;color:var(--gray);padding:50px 20px;font-size:14px;background:var(--card);border-radius:var(--radius);border:1px solid #222}
+        .card-photo{width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid var(--primary);flex-shrink:0}
+        .card-photo-placeholder{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#e6c200);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#000;flex-shrink:0;border:2px solid var(--primary)}
+        .card-top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+        .card-top-info{flex:1;min-width:0}
+        .modal-photo{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);display:block;margin:0 auto 12px}
+        .modal-photo-placeholder{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#f9d71c,#e6c200);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#000;margin:0 auto 12px;border:3px solid #f9d71c}
+        /* Passenger modal */
+        .pax-modal-overlay{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.92);overflow:auto;backdrop-filter:blur(8px)}
+        .pax-modal-overlay.active{display:block}
+        /* Report cards */
+        .report-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid #222;border-left:4px solid #ff6d00}
+        .report-card.resolved{border-left-color:var(--success);opacity:.7}
+        .report-card.dismissed{border-left-color:#666;opacity:.5}
+        .report-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+        .report-badge-pending{background:#fff3e0;color:#e65100}
+        .report-badge-reviewing{background:#e3f2fd;color:#1565c0}
+        .report-badge-resolved{background:#e8f5e9;color:#2e7d32}
+        .report-badge-dismissed{background:#f5f5f5;color:#666}
+        .account-badge-active{color:var(--success);font-weight:600}
+        .account-badge-suspended{color:#ff6d00;font-weight:700}
+        .account-badge-blocked{color:var(--danger);font-weight:700}
+        .refresh-btn{background:transparent;border:1.5px solid #444;color:#ccc;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+        .refresh-btn:hover{border-color:var(--primary);color:var(--primary)}
+        .export-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:16px;background:var(--card);border-radius:var(--radius);border:1px solid #222;align-items:center}
+        .export-bar .export-label{color:var(--gray);font-size:12px;font-weight:600;margin-right:8px}
+        .btn-export{padding:8px 16px;border-radius:10px;border:1.5px solid #444;background:transparent;color:#ccc;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .2s}
+        .btn-export:hover{border-color:var(--primary);color:var(--primary);background:rgba(249,215,28,.05)}
+        @media(max-width:600px){.docs-grid{grid-template-columns:1fr}.modal-content{margin:0;border-radius:0;min-height:100vh}.driver-info-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>⚙️ SwiftDeal Admin</h1>
+                <p>Driver Verification & Platform Management</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
+                <div class="header-time" id="currentTime"></div>
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat"><div class="stat-num" id="pendingCount" style="color:var(--warning)">0</div><div class="stat-label">Pending Review</div></div>
+            <div class="stat"><div class="stat-num" id="approvedCount" style="color:var(--success)">0</div><div class="stat-label">Approved</div></div>
+            <div class="stat"><div class="stat-num" id="rejectedCount" style="color:var(--danger)">0</div><div class="stat-label">Rejected</div></div>
+            <div class="stat"><div class="stat-num" id="totalDrivers" style="color:var(--primary)">0</div><div class="stat-label">Total Drivers</div></div>
+            <div class="stat"><div class="stat-num" id="totalPassengers" style="color:#64b5f6">0</div><div class="stat-label">Passengers</div></div>
+            <div class="stat"><div class="stat-num" id="paxNewToday" style="color:#00e5ff">0</div><div class="stat-label">New Today</div></div>
+            <div class="stat"><div class="stat-num" id="reportsCount" style="color:#ff6d00">0</div><div class="stat-label">Open Reports</div></div>
+            <div class="stat"><div class="stat-num" id="pendingPaymentsCount" style="color:#ab47bc">$0</div><div class="stat-label">Total Revenue</div></div>
+            <div class="stat"><div class="stat-num" id="onlineDrivers" style="color:var(--success)">0</div><div class="stat-label">Online Now</div></div>
+            <div class="stat"><div class="stat-num" id="totalRides" style="color:#0097a7">0</div><div class="stat-label">Total Rides</div></div>
+            <div class="stat"><div class="stat-num" id="avgRatingStat" style="color:#f9d71c">—</div><div class="stat-label">Avg Rating</div></div>
+        </div>
+        <div class="admin-tabs">
+            <div class="admin-tab active" onclick="switchTab('pending',this)">⏳ Pending<span class="tab-count" id="tabPendingCount">0</span></div>
+            <div class="admin-tab" onclick="switchTab('approved',this)">✅ Approved<span class="tab-count" id="tabApprovedCount">0</span></div>
+            <div class="admin-tab" onclick="switchTab('rejected',this)">❌ Rejected<span class="tab-count" id="tabRejectedCount">0</span></div>
+            <div class="admin-tab" onclick="switchTab('all',this)">👥 All Drivers<span class="tab-count" id="tabAllCount">0</span></div>
+            <div class="admin-tab" onclick="switchTab('passengers',this)">🧑 Passengers<span class="tab-count" id="tabPaxCount">0</span></div>
+            <div class="admin-tab" onclick="switchTab('reports',this)">🚨 Reports<span class="tab-count" id="tabReportsCount" style="background:#ff6d00">0</span></div>
+            <div class="admin-tab" onclick="switchTab('payments',this)">💰 Revenue<span class="tab-count" id="tabPaymentsCount" style="background:#ab47bc">0</span></div>
+            <div class="admin-tab" onclick="switchTab('ratings',this)">⭐ Ratings<span class="tab-count" id="tabRatingsCount" style="background:#f9d71c;color:#000">0</span></div>
+            <div class="admin-tab" onclick="switchTab('rides',this)">🚗 Rides<span class="tab-count" id="tabRidesCount" style="background:#0097a7">0</span></div>
+            <div class="admin-tab" onclick="switchTab('notifications',this)">🔔 Notifications<span class="tab-count" id="tabNotifCount" style="background:#f44336;color:#fff">0</span></div>
+        </div>
+        <div class="export-bar">
+            <span class="export-label">📤 EXPORT:</span>
+            <button class="btn-export" onclick="exportAllCSV()">📊 All Drivers (CSV)</button>
+            <button class="btn-export" onclick="exportFilteredCSV('pending')">⏳ Pending (CSV)</button>
+            <button class="btn-export" onclick="exportFilteredCSV('approved')">✅ Approved (CSV)</button>
+            <button class="btn-export" onclick="exportFilteredCSV('rejected')">❌ Rejected (CSV)</button>
+            <button class="btn-export" onclick="exportPaxCSV()">🧑 Passengers (CSV)</button>
+            <button class="btn-export" onclick="exportReportsCSV()">🚨 Reports (CSV)</button>
+            <button class="btn-export" onclick="exportPaymentsCSV()">💰 Revenue (CSV)</button>
+            <button class="btn-export" onclick="exportRatingsCSV()">⭐ Ratings (CSV)</button>
+            <button class="btn-export" onclick="exportRidesCSV()">🚗 Rides (CSV)</button>
+        </div>
+        <div class="tab-panel active" id="panel-pending"><div class="section-title">⏳ Pending Verification</div><div id="pendingQueue"></div></div>
+        <div class="tab-panel" id="panel-approved"><div class="section-title">✅ Approved Drivers</div><div id="approvedQueue"></div></div>
+        <div class="tab-panel" id="panel-rejected"><div class="section-title">❌ Rejected Applications</div><div id="rejectedQueue"></div></div>
+        <div class="tab-panel" id="panel-all"><div class="section-title">👥 All Drivers</div><div id="allQueue"></div></div>
+        <div class="tab-panel" id="panel-passengers"><div class="section-title">🧑 Registered Passengers</div><div id="paxQueue"></div></div>
+        <div class="tab-panel" id="panel-reports"><div class="section-title">🚨 User Reports</div><div id="reportsQueue"></div></div>
+        <div class="tab-panel" id="panel-payments">
+            <div class="section-title">💰 Revenue & Driver Wallets</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px">
+                <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;opacity:.7;font-weight:600">TOTAL REVENUE (10% Commissions)</div>
+                    <div style="font-size:28px;font-weight:800;margin:8px 0" id="totalRevenueDisplay">$0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">TOTAL WALLET DEPOSITS</div>
+                    <div style="font-size:28px;font-weight:800;margin:8px 0;color:#69f0ae" id="totalDepositsDisplay">$0</div>
+                </div>
+            </div>
+            <div style="background:#1a1a1a;border:2px solid #ab47bc;border-radius:14px;padding:18px;margin-bottom:20px">
+                <h3 style="color:#ab47bc;font-size:15px;font-weight:700;margin-bottom:14px">🔧 Admin: Credit Driver Wallet</h3>
+                <p style="font-size:11px;color:#888;margin-bottom:10px">Manually add credits to a driver's wallet (for refunds, promos, or corrections).</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <select id="adminCreditDriver" style="flex:1;min-width:150px;padding:10px;border:1px solid #333;border-radius:8px;background:#222;color:#fff;font-size:13px;font-family:inherit">
+                        <option value="">Select driver...</option>
+                    </select>
+                    <input type="number" id="adminCreditAmount" placeholder="Amount" inputmode="decimal" style="width:120px;padding:10px;border:1px solid #333;border-radius:8px;background:#222;color:#fff;font-size:13px;font-family:inherit">
+                    <button onclick="adminCreditWallet()" style="padding:10px 16px;background:#ab47bc;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💳 Credit</button>
+                </div>
+            </div>
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:#fff">👤 Driver Wallet Balances</h3>
+            <div id="walletBalancesQueue"></div>
+        </div>
+
+        <div class="tab-panel" id="panel-ratings">
+            <div class="section-title">⭐ Passenger Ratings & Tips</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+                <div style="background:linear-gradient(135deg,#f9d71c,#ff9800);padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;opacity:.7;font-weight:700;color:#000">AVERAGE RATING</div>
+                    <div style="font-size:32px;font-weight:800;color:#000;margin:8px 0" id="avgRatingDisplay">—</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">TOTAL REVIEWS</div>
+                    <div style="font-size:32px;font-weight:800;color:#64b5f6;margin:8px 0" id="totalReviewsDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">TOTAL TIPS</div>
+                    <div style="font-size:32px;font-weight:800;color:#69f0ae;margin:8px 0" id="totalTipsDisplay">$0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:20px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">5-STAR %</div>
+                    <div style="font-size:32px;font-weight:800;color:var(--primary);margin:8px 0" id="fiveStarPercent">0%</div>
+                </div>
+            </div>
+            <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:18px;margin-bottom:20px">
+                <h4 style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px">📊 Rating Distribution</h4>
+                <div id="ratingDistribution"></div>
+            </div>
+            <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:18px;margin-bottom:20px">
+                <h4 style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px">🏆 Top Rated Drivers</h4>
+                <div id="topRatedDrivers"></div>
+            </div>
+            <h4 style="color:#fff;font-size:14px;font-weight:700;margin-bottom:12px">📝 Recent Reviews</h4>
+            <div id="ratingsQueue"></div>
+        </div>
+
+        <div class="tab-panel" id="panel-rides">
+            <div class="section-title">🚗 All Ride Requests</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">TOTAL RIDES</div>
+                    <div style="font-size:28px;font-weight:800;color:#64b5f6;margin:6px 0" id="totalRidesDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">COMPLETED</div>
+                    <div style="font-size:28px;font-weight:800;color:var(--success);margin:6px 0" id="completedRidesDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">CANCELLED</div>
+                    <div style="font-size:28px;font-weight:800;color:var(--danger);margin:6px 0" id="cancelledRidesDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">SCHEDULED</div>
+                    <div style="font-size:28px;font-weight:800;color:#82b1ff;margin:6px 0" id="scheduledRidesDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">PROMO USED</div>
+                    <div style="font-size:28px;font-weight:800;color:#f9d71c;margin:6px 0" id="promoRidesDisplay">0</div>
+                </div>
+                <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                    <div style="font-size:11px;color:#888;font-weight:600">ACTIVE NOW</div>
+                    <div style="font-size:28px;font-weight:800;color:#ff9800;margin:6px 0" id="activeRidesDisplay">0</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                <button onclick="filterRides('all')" class="btn-export" style="background:#333;color:#fff" id="rideFilterAll">All</button>
+                <button onclick="filterRides('completed')" class="btn-export">✅ Completed</button>
+                <button onclick="filterRides('pending')" class="btn-export">⏳ Pending</button>
+                <button onclick="filterRides('cancelled')" class="btn-export">❌ Cancelled</button>
+                <button onclick="filterRides('scheduled')" class="btn-export">📅 Scheduled</button>
+                <button onclick="filterRides('in_progress')" class="btn-export">🚗 In Progress</button>
+            </div>
+            <div id="ridesQueue"></div>
+        </div>
+
+    </div>
+
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Driver Application Review</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="driver-info-grid" id="driverInfoGrid"></div>
+                <div class="docs-title">📄 Submitted Documents</div>
+                <div class="docs-grid" id="docsGrid"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:14px;background:#f7f7f7;border-radius:12px">
+                    <span style="font-size:12px;font-weight:700;color:#888;margin-right:4px;line-height:32px">📤 EXPORT:</span>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="exportDriverData(currentReviewId)">📊 Driver Data (CSV)</button>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="downloadDriverDoc(currentReviewId,'vehiclePhoto','Vehicle_Photo')">📸 Vehicle Photo</button>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="downloadDriverDoc(currentReviewId,'registration','Registration')">📄 Registration</button>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="downloadDriverDoc(currentReviewId,'govId','Government_ID')">🪪 Gov ID</button>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="downloadDriverDoc(currentReviewId,'selfie','Selfie')">🤳 Selfie</button>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="downloadAllDocs(currentReviewId)">⬇️ All Documents</button>
+                </div>
+                <div class="modal-actions" id="modalActions"></div>
+                <div id="rejectForm">
+                    <h4>⚠️ Rejection Reason</h4>
+                    <textarea id="rejectionReason" placeholder="Explain why this application is being rejected..."></textarea>
+                    <button class="btn-confirm-reject" onclick="confirmReject()">Confirm Rejection</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="tab-panel" id="panel-notifications">
+        <div class="section-title">🔔 Push Notifications</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+            <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                <div style="font-size:11px;color:#888;font-weight:600">TOTAL PUSH USERS</div>
+                <div style="font-size:28px;font-weight:800;color:#f9d71c;margin:6px 0" id="pushTotalCount">0</div>
+            </div>
+            <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                <div style="font-size:11px;color:#888;font-weight:600">PASSENGERS</div>
+                <div style="font-size:28px;font-weight:800;color:#64b5f6;margin:6px 0" id="pushPaxCount">0</div>
+            </div>
+            <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                <div style="font-size:11px;color:#888;font-weight:600">DRIVERS</div>
+                <div style="font-size:28px;font-weight:800;color:var(--success);margin:6px 0" id="pushDrvCount">0</div>
+            </div>
+            <div style="background:var(--card);border:1px solid #333;padding:18px;border-radius:14px;text-align:center">
+                <div style="font-size:11px;color:#888;font-weight:600">SENT TODAY</div>
+                <div style="font-size:28px;font-weight:800;color:#ff9800;margin:6px 0" id="pushSentToday">0</div>
+            </div>
+        </div>
+
+        <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:20px;margin-bottom:16px">
+            <h4 style="color:var(--primary);font-size:14px;margin-bottom:14px">⚡ Quick Templates</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div onclick="useNotifTemplate('tester')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">🧪</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">Tester Engagement</div>
+                    <div style="font-size:10px;color:#888">Ask testers to open app 60s</div>
+                </div>
+                <div onclick="useNotifTemplate('review')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">⭐</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">Request Review</div>
+                    <div style="font-size:10px;color:#888">Ask for Play Store rating</div>
+                </div>
+                <div onclick="useNotifTemplate('update')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">🚀</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">New Update</div>
+                    <div style="font-size:10px;color:#888">Announce new version</div>
+                </div>
+                <div onclick="useNotifTemplate('promo')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">💵</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">Promo Offer</div>
+                    <div style="font-size:10px;color:#888">Send promotional message</div>
+                </div>
+                <div onclick="useNotifTemplate('driver_needed')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">🚗</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">Drivers Needed</div>
+                    <div style="font-size:10px;color:#888">Recruit more drivers</div>
+                </div>
+                <div onclick="useNotifTemplate('welcome')" style="background:#111;border:1px solid #333;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#f9d71c'" onmouseout="this.style.borderColor='#333'">
+                    <div style="font-size:14px;margin-bottom:4px">👋</div>
+                    <div style="font-size:12px;font-weight:700;color:#fff">Welcome Message</div>
+                    <div style="font-size:10px;color:#888">Greet new users</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#1b5e20;border:2px solid #4caf50;border-radius:14px;padding:16px;margin-bottom:16px;cursor:pointer" onclick="openFirebaseMessaging()">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:28px">🔔</span>
+                <div style="flex:1">
+                    <div style="font-size:14px;font-weight:800;color:#fff">Send Background Push (Lock Screen)</div>
+                    <div style="font-size:11px;color:#a5d6a7">Tap to open Firebase Console Messaging</div>
+                </div>
+                <span style="font-size:20px;color:#4caf50">→</span>
+            </div>
+        </div>
+
+        <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:20px;margin-bottom:16px">
+            <h4 style="color:var(--primary);font-size:14px;margin-bottom:14px">📝 Compose In-App Notification</h4>
+            <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Target Audience</label>
+            <select id="notifAudience" style="width:100%;padding:12px;background:#111;color:#fff;border:1px solid #333;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:12px">
+                <option value="all">All Users</option>
+                <option value="passengers">Passengers Only</option>
+                <option value="drivers">Drivers Only</option>
+            </select>
+            <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Title</label>
+            <input type="text" id="notifTitle" placeholder="Notification title..." style="width:100%;padding:12px;background:#111;color:#fff;border:1px solid #333;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:12px">
+            <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Message</label>
+            <textarea id="notifBody" placeholder="Your message here..." style="width:100%;padding:12px;background:#111;color:#fff;border:1px solid #333;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:16px;min-height:100px;resize:vertical"></textarea>
+            <button onclick="sendAdminNotification()" style="width:100%;padding:14px;background:var(--primary);color:#000;border:none;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer">🔔 SEND PUSH NOTIFICATION</button>
+        </div>
+
+        <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:20px">
+            <h4 style="color:var(--primary);font-size:14px;margin-bottom:14px">📋 Notification History</h4>
+            <div id="notifHistory" style="font-size:12px;color:#aaa">Loading...</div>
+        </div>
+    </div>
+
+    <div class="image-viewer" id="imageViewer" onclick="closeImageViewer()">
+
+    <div class="pax-modal-overlay" id="paxModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🧑 Passenger Details</h2>
+                <button class="modal-close" onclick="closePaxModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;margin-bottom:20px" id="paxModalPhoto"></div>
+                <div class="driver-info-grid" id="paxInfoGrid"></div>
+                <div id="paxAccountActions" style="margin-top:16px"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px;background:#f7f7f7;border-radius:12px;margin-top:16px">
+                    <span style="font-size:12px;font-weight:700;color:#888;margin-right:4px;line-height:32px">📤 EXPORT:</span>
+                    <button class="btn btn-outline btn-sm" style="color:#000;border-color:#ccc" onclick="exportPaxCSV()">📊 All Passengers (CSV)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-viewer-label" id="imageViewerLabel"></div>
+        <button class="image-viewer-close" onclick="closeImageViewer()">&times;</button>
+        <img id="imageViewerImg" src="">
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        firebase.initializeApp({
+            apiKey: "AIzaSyCmHg4nOAXC-JaW2wPesh6VJY7v1twiMw4",
+            authDomain: "swiftdeal-3cee9.firebaseapp.com",
+            databaseURL: "https://swiftdeal-3cee9-default-rtdb.firebaseio.com",
+            projectId: "swiftdeal-3cee9",
+            storageBucket: "swiftdeal-3cee9.firebasestorage.app",
+            messagingSenderId: "626252184385",
+            appId: "1:626252184385:web:b525e1b382c72ccdf43fc0"
+        });
+        const db = firebase.database();
+        let currentReviewId = null;
+        let allDrivers = {};
+        let allPassengers = {};
+        let allReports = {};
+        let currentPaxId = null;
+
+        setInterval(() => { document.getElementById('currentTime').textContent = new Date().toLocaleString(); }, 1000);
+
+        function switchTab(tab, el) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('panel-' + tab).classList.add('active');
+        }
+
+        var prevDriverCount = -1;
+        db.ref('driverAccounts').on('value', snap => {
+            allDrivers = snap.val() || {};
+            const list = Object.entries(allDrivers);
+            const pending = list.filter(([_, d]) => d.verificationStatus === 'pending');
+            const approved = list.filter(([_, d]) => d.verificationStatus === 'approved');
+            const rejected = list.filter(([_, d]) => d.verificationStatus === 'rejected');
+            const online = list.filter(([_, d]) => d.status === 'online');
+
+            document.getElementById('pendingCount').textContent = pending.length;
+            document.getElementById('approvedCount').textContent = approved.length;
+            document.getElementById('rejectedCount').textContent = rejected.length;
+            document.getElementById('totalDrivers').textContent = list.length;
+            document.getElementById('onlineDrivers').textContent = online.length;
+            document.getElementById('tabPendingCount').textContent = pending.length;
+            document.getElementById('tabApprovedCount').textContent = approved.length;
+            document.getElementById('tabRejectedCount').textContent = rejected.length;
+            document.getElementById('tabAllCount').textContent = list.length;
+
+            /* Notify on new driver signup */
+            if (prevDriverCount >= 0 && list.length > prevDriverCount) {
+                var newest = list.sort(function(a, b) { return (b[1].createdAt || 0) - (a[1].createdAt || 0); })[0];
+                if (newest) {
+                    var dName = newest[1].name || 'Unknown';
+                    var dPhone = newest[1].phone || '';
+                    var dVehicle = newest[1].vehicle || '';
+                    showAdminToast('🚗 New driver: ' + dName + ' — needs review!');
+                    playAdminNotifSound();
+                    showBrowserNotification(
+                        '🚨 New SwiftDeal Driver!',
+                        dName + ' just signed up' + (dPhone ? ' (' + dPhone + ')' : '') + (dVehicle ? ' — ' + dVehicle : '') + '. Tap to review their documents.'
+                    );
+                }
+            }
+            prevDriverCount = list.length;
+
+            renderQueue('pendingQueue', pending, 'pending');
+            renderQueue('approvedQueue', approved, 'approved');
+            renderQueue('rejectedQueue', rejected, 'rejected');
+            renderQueue('allQueue', list, 'all');
+        });
+
+        /* ══════ LOAD PASSENGERS ══════ */
+        var prevPaxCount = -1;
+        db.ref('passengers').on('value', snap => {
+            allPassengers = snap.val() || {};
+            var paxList = Object.entries(allPassengers);
+            document.getElementById('totalPassengers').textContent = paxList.length;
+            document.getElementById('tabPaxCount').textContent = paxList.length;
+            /* Count new today */
+            var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+            var ts = todayStart.getTime();
+            var newToday = paxList.filter(function(e) { return (e[1].createdAt || 0) >= ts; }).length;
+            document.getElementById('paxNewToday').textContent = newToday;
+            /* Notification when new passenger signs up */
+            if (prevPaxCount >= 0 && paxList.length > prevPaxCount) {
+                var newest = paxList.sort(function(a, b) { return (b[1].createdAt || 0) - (a[1].createdAt || 0); })[0];
+                if (newest) {
+                    var pName = newest[1].name || newest[1].email || 'Unknown';
+                    showAdminToast('🧑 New passenger: ' + pName + ' (' + paxList.length + ' total)');
+                    playAdminNotifSound();
+                    showBrowserNotification('🧑 New SwiftDeal Passenger', pName + ' just joined. Total passengers: ' + paxList.length);
+                }
+            }
+            prevPaxCount = paxList.length;
+            renderPassengers(paxList);
+        });
+
+        /* ══════ LOAD REPORTS ══════ */
+        db.ref('reports').on('value', snap => {
+            allReports = snap.val() || {};
+            var list = Object.entries(allReports);
+            var openCount = list.filter(([_, r]) => r.status === 'pending' || r.status === 'reviewing').length;
+            document.getElementById('reportsCount').textContent = openCount;
+            document.getElementById('tabReportsCount').textContent = list.length;
+            renderReports(list);
+        });
+
+        function renderQueue(containerId, drivers, type) {
+            const el = document.getElementById(containerId);
+            if (!drivers.length) {
+                const msgs = { pending: '✅ No pending applications — all caught up!', approved: 'No approved drivers yet', rejected: 'No rejected applications', all: 'No drivers registered yet' };
+                el.innerHTML = '<div class="empty-state">' + (msgs[type] || 'No drivers') + '</div>';
+                return;
+            }
+            el.innerHTML = drivers.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0)).map(function(entry) {
+                var id = entry[0], d = entry[1];
+                var status = d.verificationStatus || 'pending';
+                var badgeClass = status === 'approved' ? 'badge-approved' : status === 'rejected' ? 'badge-rejected' : 'badge-pending';
+                var badgeText = status === 'approved' ? '✅ Approved' : status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+                var docCount = 0;
+                if (d.documents) {
+                    if (d.documents.vehiclePhoto && d.documents.vehiclePhoto.data) docCount++;
+                    if (d.documents.registration && d.documents.registration.data) docCount++;
+                    if (d.documents.govId && d.documents.govId.data) docCount++;
+                    if (d.documents.selfie && d.documents.selfie.data) docCount++;
+                }
+                var hasDocs = docCount > 0;
+                var photoHtml = d.profilePhoto ? '<img class="card-photo" src="' + d.profilePhoto + '" onerror="this.outerHTML=\'<div class=card-photo-placeholder>' + (d.name||'D').charAt(0).toUpperCase() + '</div>\'">' : '<div class="card-photo-placeholder">' + (d.name||'D').charAt(0).toUpperCase() + '</div>';
+
+                var html = '<div class="driver-card">';
+                html += '<div class="card-top">' + photoHtml + '<div class="card-top-info"><div class="driver-card-header"><h4>' + (d.name || 'Unknown Driver') + '</h4><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></div></div></div>';
+                html += '<div class="driver-card-body">';
+                html += '<p><strong>📧 Email:</strong> ' + (d.email || '-') + '</p>';
+                html += '<p><strong>📞 Phone:</strong> ' + (d.phone || '-') + '</p>';
+                html += '<p><strong>🚗 Vehicle:</strong> ' + (d.vehicle || '') + ' ' + (d.vehicleType ? '(' + d.vehicleType + ')' : '') + '</p>';
+                html += '<p><strong>🔢 Plate:</strong> ' + (d.plate || d.vehiclePlate || '-') + '</p>';
+                html += '<p><strong>🌍 Country:</strong> ' + (d.country || '-') + '</p>';
+                html += '<p><strong>📄 Documents:</strong> ' + (hasDocs ? '<span style="color:#00c853">' + docCount + '/4 uploaded</span>' : '<span style="color:#ff1744">Not uploaded</span>') + '</p>';
+                html += '<p><strong>📅 Registered:</strong> ' + (d.createdAt ? new Date(d.createdAt).toLocaleString() : '-') + '</p>';
+                if (d.rejectionReason) html += '<p style="color:#ff1744"><strong>❌ Rejection:</strong> ' + d.rejectionReason + '</p>';
+                html += '</div>';
+                html += '<div class="driver-card-actions">';
+                html += '<button class="btn btn-primary" onclick="reviewDriver(\'' + id + '\')">📋 Review & View Docs</button>';
+                html += '<button class="btn btn-outline btn-sm" onclick="exportDriverData(\'' + id + '\')">📤 Export</button>';
+                if (status === 'pending') html += '<button class="btn btn-success btn-sm" onclick="quickApprove(\'' + id + '\')">✅ Quick Approve</button>';
+                if (status === 'rejected') html += '<button class="btn btn-success btn-sm" onclick="quickApprove(\'' + id + '\')">🔄 Re-approve</button>';
+                if (status === 'approved') html += '<button class="btn btn-outline btn-sm" onclick="revokeDriver(\'' + id + '\')">⛔ Revoke</button>';
+                html += '</div></div>';
+                return html;
+            }).join('');
+        }
+
+        function reviewDriver(id) {
+            currentReviewId = id;
+            var d = allDrivers[id];
+            if (!d) { alert('Driver not found'); return; }
+
+            var photoHtml = d.profilePhoto ? '<img class="modal-photo" src="' + d.profilePhoto + '" onclick="viewImage(\'Profile Photo\',\'__profile__\')">' : '<div class="modal-photo-placeholder">' + (d.name||'D').charAt(0).toUpperCase() + '</div>';
+            var infoHtml = '<div style="text-align:center;margin-bottom:16px">' + photoHtml + '</div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Full Name</div><div class="info-value">' + (d.name || '-') + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Email</div><div class="info-value">' + (d.email || '-') + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Phone</div><div class="info-value">' + (d.phone || '-') + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Vehicle</div><div class="info-value">' + (d.vehicle || '-') + ' ' + (d.vehicleType ? '(' + d.vehicleType + ')' : '') + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">License Plate</div><div class="info-value">' + (d.plate || d.vehiclePlate || '-') + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Country</div><div class="info-value">' + (d.country || '-') + '</div></div>';
+            var statusColor = d.verificationStatus === 'approved' ? '#00c853' : d.verificationStatus === 'rejected' ? '#ff1744' : '#e6a800';
+            infoHtml += '<div class="info-item"><div class="info-label">Status</div><div class="info-value" style="color:' + statusColor + '">' + (d.verificationStatus || 'pending').toUpperCase() + '</div></div>';
+            infoHtml += '<div class="info-item"><div class="info-label">Registered</div><div class="info-value">' + (d.createdAt ? new Date(d.createdAt).toLocaleString() : '-') + '</div></div>';
+            if (d.approvedAt) infoHtml += '<div class="info-item"><div class="info-label">Approved</div><div class="info-value">' + new Date(d.approvedAt).toLocaleString() + '</div></div>';
+            if (d.rejectedAt) infoHtml += '<div class="info-item"><div class="info-label">Rejected</div><div class="info-value">' + new Date(d.rejectedAt).toLocaleString() + '</div></div>';
+            if (d.rejectionReason) infoHtml += '<div class="info-item" style="grid-column:1/-1"><div class="info-label">Rejection Reason</div><div class="info-value" style="color:#ff1744">' + d.rejectionReason + '</div></div>';
+            document.getElementById('driverInfoGrid').innerHTML = infoHtml;
+
+            var docs = d.documents || {};
+            var docTypes = [
+                { key: 'vehiclePhoto', label: '📸 Vehicle Photo', icon: '🚗' },
+                { key: 'registration', label: '📄 Vehicle Registration', icon: '📋' },
+                { key: 'govId', label: '🪪 Government ID', icon: '🆔' },
+                { key: 'selfie', label: '🤳 Driver Selfie', icon: '👤' }
+            ];
+            var docsHtml = '';
+            for (var i = 0; i < docTypes.length; i++) {
+                var dt = docTypes[i];
+                var doc = docs[dt.key];
+                var hasData = doc && doc.data;
+                var uploadedAt = (doc && doc.uploadedAt) ? new Date(doc.uploadedAt).toLocaleDateString() : '';
+
+                docsHtml += '<div class="doc-card">';
+                if (hasData) {
+                    docsHtml += '<div class="doc-card-header">' + dt.label + '<span class="doc-status" style="color:#00c853">✅ Uploaded ' + uploadedAt + '</span></div>';
+                    docsHtml += '<div class="doc-card-body" onclick="viewImage(\'' + dt.label + '\',\'' + dt.key + '\')">';
+                    docsHtml += '<img src="' + doc.data + '" alt="' + dt.label + '" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'<div class=no-doc>⚠️ Image failed to load</div>\'">';
+                    docsHtml += '<div class="zoom-hint">🔍 Click to zoom</div>';
+                    docsHtml += '</div>';
+                } else {
+                    docsHtml += '<div class="doc-card-header">' + dt.label + '<span class="doc-status" style="color:#ff1744">❌ Missing</span></div>';
+                    docsHtml += '<div class="doc-card-body"><div class="no-doc">' + dt.icon + '<br>Not uploaded</div></div>';
+                }
+                docsHtml += '</div>';
+            }
+            document.getElementById('docsGrid').innerHTML = docsHtml;
+
+            var status = d.verificationStatus || 'pending';
+            var actionsHtml = '';
+            if (status === 'pending') {
+                actionsHtml = '<button class="btn btn-success" onclick="approveDriver()">✅ Approve Driver</button><button class="btn btn-danger" onclick="showRejectForm()">❌ Reject Application</button>';
+            } else if (status === 'approved') {
+                actionsHtml = '<button class="btn btn-outline" style="color:#00c853;border-color:#00c853">✅ Already Approved</button><button class="btn btn-danger" onclick="revokeFromModal()">⛔ Revoke Approval</button>';
+            } else if (status === 'rejected') {
+                actionsHtml = '<button class="btn btn-success" onclick="approveDriver()">🔄 Re-approve Driver</button><button class="btn btn-outline" style="color:#ff1744;border-color:#ff1744">❌ Currently Rejected</button>';
+            }
+            document.getElementById('modalActions').innerHTML = actionsHtml;
+            document.getElementById('rejectForm').style.display = 'none';
+            document.getElementById('rejectionReason').value = '';
+            document.getElementById('reviewModal').classList.add('active');
+        }
+
+        function viewImage(label, docKey) {
+            var d = allDrivers[currentReviewId];
+            if (!d) return;
+            var imgData = null;
+            if (docKey === '__profile__') {
+                imgData = d.profilePhoto;
+            } else if (d.documents && d.documents[docKey] && d.documents[docKey].data) {
+                imgData = d.documents[docKey].data;
+            }
+            if (!imgData) return;
+            document.getElementById('imageViewerLabel').textContent = label;
+            document.getElementById('imageViewerImg').src = imgData;
+            document.getElementById('imageViewer').classList.add('active');
+        }
+
+        function closeImageViewer() {
+            document.getElementById('imageViewer').classList.remove('active');
+        }
+
+        function closeModal() {
+            document.getElementById('reviewModal').classList.remove('active');
+            document.getElementById('rejectForm').style.display = 'none';
+            currentReviewId = null;
+        }
+
+        function approveDriver() {
+            if (!currentReviewId) return;
+            var d = allDrivers[currentReviewId];
+            if (!confirm('✅ Approve ' + (d ? d.name : 'this driver') + '?\n\nThey will be able to subscribe and start receiving rides.')) return;
+            db.ref('driverAccounts/' + currentReviewId).update({
+                verificationStatus: 'approved', status: 'approved',
+                approvedAt: Date.now(), approvedBy: 'ADMIN',
+                rejectionReason: null, rejectedAt: null
+            }).then(function() {
+                alert('✅ Driver approved successfully!');
+                closeModal();
+            }).catch(function(e) { alert('Error: ' + e.message); });
+        }
+
+        function quickApprove(id) {
+            var d = allDrivers[id];
+            if (!confirm('✅ Quick approve ' + (d ? d.name : 'this driver') + '?')) return;
+            db.ref('driverAccounts/' + id).update({
+                verificationStatus: 'approved', status: 'approved',
+                approvedAt: Date.now(), approvedBy: 'ADMIN',
+                rejectionReason: null, rejectedAt: null
+            }).then(function() {
+                alert('✅ Approved!');
+            }).catch(function(e) { alert('Error: ' + e.message); });
+        }
+
+        function revokeDriver(id) {
+            var d = allDrivers[id];
+            if (!confirm('⛔ Revoke approval for ' + (d ? d.name : 'this driver') + '?\n\nThey will no longer be able to accept rides.')) return;
+            db.ref('driverAccounts/' + id).update({
+                verificationStatus: 'rejected', status: 'offline',
+                rejectedAt: Date.now(), rejectedBy: 'ADMIN',
+                rejectionReason: 'Approval revoked by admin'
+            }).then(function() {
+                alert('⛔ Approval revoked');
+            }).catch(function(e) { alert('Error: ' + e.message); });
+        }
+
+        function revokeFromModal() {
+            if (!currentReviewId) return;
+            revokeDriver(currentReviewId);
+            closeModal();
+        }
+
+        function showRejectForm() {
+            document.getElementById('rejectForm').style.display = 'block';
+            document.getElementById('rejectionReason').focus();
+        }
+
+        function confirmReject() {
+            if (!currentReviewId) return;
+            var reason = document.getElementById('rejectionReason').value.trim();
+            if (!reason) { alert('Please enter a rejection reason'); return; }
+            var d = allDrivers[currentReviewId];
+            if (!confirm('❌ Reject ' + (d ? d.name : 'this driver') + '?')) return;
+            db.ref('driverAccounts/' + currentReviewId).update({
+                verificationStatus: 'rejected', status: 'rejected',
+                rejectedAt: Date.now(), rejectedBy: 'ADMIN', rejectionReason: reason
+            }).then(function() {
+                alert('Application rejected');
+                closeModal();
+            }).catch(function(e) { alert('Error: ' + e.message); });
+        }
+
+        document.getElementById('reviewModal').addEventListener('click', function(e) {
+            if (e.target === document.getElementById('reviewModal')) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeImageViewer(); closeModal(); closePaxModal(); }
+        });
+
+        /* ══════ EXPORT FUNCTIONS ══════ */
+
+        function csvEscape(val) {
+            if (val === null || val === undefined) return '';
+            var s = String(val);
+            if (s.indexOf(',') > -1 || s.indexOf('"') > -1 || s.indexOf('\n') > -1) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        }
+
+        function downloadFile(filename, content, mimeType) {
+            var blob = new Blob([content], { type: mimeType });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+
+        function driversToCSV(drivers) {
+            var headers = ['Name','Email','Phone','Vehicle','Vehicle Type','Plate','Country','Status','Earnings','Trips','Rating','Registered','Has Vehicle Photo','Has Registration','Has Gov ID','Has Selfie','Rejection Reason'];
+            var rows = [headers.join(',')];
+            for (var i = 0; i < drivers.length; i++) {
+                var d = drivers[i][1];
+                var docs = d.documents || {};
+                var row = [
+                    csvEscape(d.name),
+                    csvEscape(d.email),
+                    csvEscape(d.phone),
+                    csvEscape(d.vehicle),
+                    csvEscape(d.vehicleType),
+                    csvEscape(d.plate || d.vehiclePlate),
+                    csvEscape(d.country),
+                    csvEscape(d.verificationStatus),
+                    csvEscape(d.earnings || 0),
+                    csvEscape(d.trips || 0),
+                    csvEscape(d.rating || 5),
+                    csvEscape(d.createdAt ? new Date(d.createdAt).toLocaleString() : ''),
+                    csvEscape(docs.vehiclePhoto && docs.vehiclePhoto.data ? 'Yes' : 'No'),
+                    csvEscape(docs.registration && docs.registration.data ? 'Yes' : 'No'),
+                    csvEscape(docs.govId && docs.govId.data ? 'Yes' : 'No'),
+                    csvEscape(docs.selfie && docs.selfie.data ? 'Yes' : 'No'),
+                    csvEscape(d.rejectionReason || '')
+                ];
+                rows.push(row.join(','));
+            }
+            return rows.join('\n');
+        }
+
+        function exportAllCSV() {
+            var list = Object.entries(allDrivers);
+            if (!list.length) { alert('No drivers to export'); return; }
+            var csv = driversToCSV(list);
+            var date = new Date().toISOString().split('T')[0];
+            downloadFile('SwiftDeal_All_Drivers_' + date + '.csv', csv, 'text/csv');
+        }
+
+        function exportFilteredCSV(status) {
+            var list = Object.entries(allDrivers).filter(function(entry) { return entry[1].verificationStatus === status; });
+            if (!list.length) { alert('No ' + status + ' drivers to export'); return; }
+            var csv = driversToCSV(list);
+            var date = new Date().toISOString().split('T')[0];
+            downloadFile('SwiftDeal_' + status.charAt(0).toUpperCase() + status.slice(1) + '_Drivers_' + date + '.csv', csv, 'text/csv');
+        }
+
+        function exportDriverData(id) {
+            var d = allDrivers[id];
+            if (!d) { alert('Driver not found'); return; }
+            var csv = driversToCSV([[id, d]]);
+            var safeName = (d.name || 'driver').replace(/[^a-zA-Z0-9]/g, '_');
+            downloadFile('SwiftDeal_Driver_' + safeName + '.csv', csv, 'text/csv');
+        }
+
+        function downloadDriverDoc(id, docKey, label) {
+            var d = allDrivers[id];
+            if (!d || !d.documents || !d.documents[docKey] || !d.documents[docKey].data) {
+                alert('Document not available — ' + label + ' has not been uploaded');
+                return;
+            }
+            var data = d.documents[docKey].data;
+            var safeName = (d.name || 'driver').replace(/[^a-zA-Z0-9]/g, '_');
+            /* data is base64 data URL like data:image/jpeg;base64,... */
+            var a = document.createElement('a');
+            a.href = data;
+            /* Determine file extension from mime type */
+            var ext = 'jpg';
+            if (data.indexOf('image/png') > -1) ext = 'png';
+            else if (data.indexOf('image/webp') > -1) ext = 'webp';
+            else if (data.indexOf('application/pdf') > -1) ext = 'pdf';
+            a.download = safeName + '_' + label + '.' + ext;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function downloadAllDocs(id) {
+            var d = allDrivers[id];
+            if (!d) { alert('Driver not found'); return; }
+            var docs = d.documents || {};
+            var docTypes = [
+                { key: 'vehiclePhoto', label: 'Vehicle_Photo' },
+                { key: 'registration', label: 'Registration' },
+                { key: 'govId', label: 'Government_ID' },
+                { key: 'selfie', label: 'Selfie' }
+            ];
+            var downloaded = 0;
+            for (var i = 0; i < docTypes.length; i++) {
+                var dt = docTypes[i];
+                if (docs[dt.key] && docs[dt.key].data) {
+                    /* Stagger downloads to prevent browser blocking */
+                    (function(key, label) {
+                        setTimeout(function() { downloadDriverDoc(id, key, label); }, downloaded * 500);
+                    })(dt.key, dt.label);
+                    downloaded++;
+                }
+            }
+            if (downloaded === 0) {
+                alert('No documents uploaded for this driver');
+            }
+        }
+
+        /* ══════ PASSENGER FUNCTIONS ══════ */
+        function renderPassengers(paxList) {
+            var el = document.getElementById('paxQueue');
+            if (!paxList.length) {
+                el.innerHTML = '<div class="empty-state">No passengers registered yet</div>';
+                return;
+            }
+            el.innerHTML = paxList.sort(function(a, b) { return (b[1].createdAt || 0) - (a[1].createdAt || 0); }).map(function(entry) {
+                var id = entry[0], p = entry[1];
+                var photoHtml = p.profilePhoto ? '<img class="card-photo" src="' + p.profilePhoto + '" onerror="this.outerHTML=\'<div class=card-photo-placeholder>' + (p.name||'P').charAt(0).toUpperCase() + '</div>\'">' : '<div class="card-photo-placeholder">' + (p.name||'P').charAt(0).toUpperCase() + '</div>';
+
+                var html = '<div class="driver-card">';
+                var statusBadge = '🧑 Passenger';
+                var badgeClass = 'badge-approved';
+                if (p.accountStatus === 'suspended') { statusBadge = '⏸️ Suspended'; badgeClass = 'badge-pending'; }
+                if (p.accountStatus === 'blocked') { statusBadge = '🚫 Blocked'; badgeClass = 'badge-rejected'; }
+                html += '<div class="card-top">' + photoHtml + '<div class="card-top-info"><div class="driver-card-header"><h4>' + (p.name || 'Unknown') + '</h4><span class="status-badge ' + badgeClass + '">' + statusBadge + '</span></div></div></div>';
+                html += '<div class="driver-card-body">';
+                html += '<p><strong>📧 Email:</strong> ' + (p.email || '-') + '</p>';
+                html += '<p><strong>📞 Phone:</strong> ' + (p.phone || '-') + '</p>';
+                html += '<p><strong>📅 Registered:</strong> ' + (p.createdAt ? new Date(p.createdAt).toLocaleString() : '-') + '</p>';
+                html += '<p><strong>📷 Profile Photo:</strong> ' + (p.profilePhoto ? '<span style="color:#00c853">Uploaded</span>' : '<span style="color:#888">None</span>') + '</p>';
+                html += '</div>';
+                html += '<div class="driver-card-actions">';
+                html += '<button class="btn btn-primary" onclick="viewPassenger(\'' + id + '\')">👁️ View Details</button>';
+                html += '</div></div>';
+                return html;
+            }).join('');
+        }
+
+        function viewPassenger(id) {
+            currentPaxId = id;
+            var p = allPassengers[id];
+            if (!p) { alert('Passenger not found'); return; }
+
+            var photoEl = document.getElementById('paxModalPhoto');
+            if (p.profilePhoto) {
+                photoEl.innerHTML = '<img class="modal-photo" src="' + p.profilePhoto + '" style="cursor:pointer" onclick="viewPaxImage()">';
+            } else {
+                photoEl.innerHTML = '<div class="modal-photo-placeholder">' + (p.name || 'P').charAt(0).toUpperCase() + '</div>';
+            }
+
+            document.getElementById('paxInfoGrid').innerHTML =
+                '<div class="info-item"><div class="info-label">Full Name</div><div class="info-value">' + (p.name || '-') + '</div></div>' +
+                '<div class="info-item"><div class="info-label">Email</div><div class="info-value">' + (p.email || '-') + '</div></div>' +
+                '<div class="info-item"><div class="info-label">Phone</div><div class="info-value">' + (p.phone || '-') + '</div></div>' +
+                '<div class="info-item"><div class="info-label">Account Status</div><div class="info-value">' + getAccountStatusHtml(p) + '</div></div>' +
+                '<div class="info-item"><div class="info-label">Profile Photo</div><div class="info-value">' + (p.profilePhoto ? '<span style="color:#00c853">✅ Uploaded</span>' : '<span style="color:#ff1744">❌ Not uploaded</span>') + '</div></div>' +
+                '<div class="info-item"><div class="info-label">Registered</div><div class="info-value">' + (p.createdAt ? new Date(p.createdAt).toLocaleString() : '-') + '</div></div>' +
+                (p.suspensionReason ? '<div class="info-item"><div class="info-label">Suspension Reason</div><div class="info-value" style="color:#ff6d00">' + p.suspensionReason + '</div></div>' : '') +
+                (p.blockReason ? '<div class="info-item"><div class="info-label">Block Reason</div><div class="info-value" style="color:#c62828">' + p.blockReason + '</div></div>' : '');
+
+            /* Account management actions */
+            var actionsHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+            var status = p.accountStatus || 'active';
+            if (status === 'active') {
+                actionsHtml += '<button class="btn btn-sm" style="background:#ff6d00;color:#fff;border:none" onclick="suspendPassenger(\'' + id + '\')">⏸️ Suspend</button>';
+                actionsHtml += '<button class="btn btn-sm" style="background:#c62828;color:#fff;border:none" onclick="blockPassenger(\'' + id + '\')">🚫 Block</button>';
+            } else if (status === 'suspended') {
+                actionsHtml += '<button class="btn btn-success btn-sm" onclick="unblockPassenger(\'' + id + '\')">✅ Restore Account</button>';
+                actionsHtml += '<button class="btn btn-sm" style="background:#c62828;color:#fff;border:none" onclick="blockPassenger(\'' + id + '\')">🚫 Block</button>';
+            } else if (status === 'blocked') {
+                actionsHtml += '<button class="btn btn-success btn-sm" onclick="unblockPassenger(\'' + id + '\')">✅ Unblock & Restore</button>';
+            }
+            actionsHtml += '</div>';
+            document.getElementById('paxAccountActions').innerHTML = actionsHtml;
+
+            document.getElementById('paxModal').classList.add('active');
+        }
+
+        function getAccountStatusHtml(p) {
+            var s = p.accountStatus || 'active';
+            if (s === 'suspended') return '<span class="account-badge-suspended">⏸️ Suspended</span>';
+            if (s === 'blocked') return '<span class="account-badge-blocked">🚫 Blocked</span>';
+            return '<span class="account-badge-active">✅ Active</span>';
+        }
+
+        function closePaxModal() {
+            document.getElementById('paxModal').classList.remove('active');
+            currentPaxId = null;
+        }
+
+        function viewPaxImage() {
+            var p = allPassengers[currentPaxId];
+            if (!p || !p.profilePhoto) return;
+            document.getElementById('imageViewerLabel').textContent = 'Passenger Profile Photo';
+            document.getElementById('imageViewerImg').src = p.profilePhoto;
+            document.getElementById('imageViewer').classList.add('active');
+        }
+
+        function exportPaxCSV() {
+            var list = Object.entries(allPassengers);
+            if (!list.length) { alert('No passengers to export'); return; }
+            var headers = ['Name','Email','Phone','Has Profile Photo','Registered'];
+            var rows = [headers.join(',')];
+            for (var i = 0; i < list.length; i++) {
+                var p = list[i][1];
+                rows.push([
+                    csvEscape(p.name), csvEscape(p.email), csvEscape(p.phone),
+                    csvEscape(p.profilePhoto ? 'Yes' : 'No'),
+                    csvEscape(p.createdAt ? new Date(p.createdAt).toLocaleString() : '')
+                ].join(','));
+            }
+            var date = new Date().toISOString().split('T')[0];
+            downloadFile('SwiftDeal_Passengers_' + date + '.csv', rows.join('\n'), 'text/csv');
+        }
+
+        document.getElementById('paxModal').addEventListener('click', function(e) {
+            if (e.target === document.getElementById('paxModal')) closePaxModal();
+        });
+
+        /* ══════ REPORT FUNCTIONS ══════ */
+        function renderReports(reportsList) {
+            var el = document.getElementById('reportsQueue');
+            if (!reportsList.length) {
+                el.innerHTML = '<div class="empty-state">No reports filed yet ✅</div>';
+                return;
+            }
+            el.innerHTML = reportsList.sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); }).map(function(entry) {
+                var id = entry[0], r = entry[1];
+                var badgeClass = r.status === 'resolved' ? 'report-badge-resolved' : r.status === 'reviewing' ? 'report-badge-reviewing' : r.status === 'dismissed' ? 'report-badge-dismissed' : 'report-badge-pending';
+                var badgeText = r.status === 'resolved' ? '✅ Resolved' : r.status === 'reviewing' ? '🔍 Reviewing' : r.status === 'dismissed' ? '✖ Dismissed' : '⏳ Pending';
+                var typeIcon = r.type === 'passenger_reports_driver' ? '🧑→🚗' : '🚗→🧑';
+                var cardClass = 'report-card' + (r.status === 'resolved' ? ' resolved' : '') + (r.status === 'dismissed' ? ' dismissed' : '');
+
+                var html = '<div class="' + cardClass + '">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;font-weight:700">' + typeIcon + ' ' + (r.type === 'passenger_reports_driver' ? 'Passenger → Driver' : 'Driver → Passenger') + '</span><span class="report-badge ' + badgeClass + '">' + badgeText + '</span></div>';
+                html += '<p style="font-size:12px;color:#666;margin-bottom:8px"><strong>Reporter:</strong> ' + (r.reporterName || '-') + ' (' + r.reporterType + ') • <strong>Phone:</strong> ' + (r.reporterPhone || '-') + '</p>';
+                html += '<p style="font-size:12px;color:#666;margin-bottom:8px"><strong>Reported:</strong> ' + (r.reportedName || '-') + ' (' + r.reportedType + ')' + (r.reportedPhone ? ' • <strong>Phone:</strong> ' + r.reportedPhone : '') + '</p>';
+                html += '<p style="font-size:13px;font-weight:700;color:#c62828;margin-bottom:6px">⚠️ ' + (r.reason || '-') + '</p>';
+                if (r.details) html += '<p style="font-size:12px;color:#333;background:#f9f9f9;padding:10px;border-radius:8px;margin-bottom:8px">' + r.details + '</p>';
+                html += '<p style="font-size:11px;color:#999">📅 ' + new Date(r.timestamp).toLocaleString() + (r.rideId ? ' • Ride: ' + r.rideId.substring(0, 8) + '...' : '') + '</p>';
+                if (r.adminNote) html += '<p style="font-size:12px;color:#1565c0;margin-top:6px;padding:8px;background:#e3f2fd;border-radius:8px">📝 Admin: ' + r.adminNote + '</p>';
+
+                html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">';
+                if (r.status === 'pending') {
+                    html += '<button class="btn btn-outline btn-sm" style="color:#1565c0;border-color:#1565c0" onclick="updateReport(\'' + id + '\',\'reviewing\')">🔍 Mark Reviewing</button>';
+                    html += '<button class="btn btn-success btn-sm" onclick="resolveReport(\'' + id + '\')">✅ Resolve</button>';
+                    html += '<button class="btn btn-outline btn-sm" style="color:#666;border-color:#ccc" onclick="dismissReport(\'' + id + '\')">✖ Dismiss</button>';
+                }
+                if (r.status === 'reviewing') {
+                    html += '<button class="btn btn-success btn-sm" onclick="resolveReport(\'' + id + '\')">✅ Resolve</button>';
+                    html += '<button class="btn btn-outline btn-sm" style="color:#666;border-color:#ccc" onclick="dismissReport(\'' + id + '\')">✖ Dismiss</button>';
+                }
+                if (r.status === 'resolved' || r.status === 'dismissed') {
+                    html += '<button class="btn btn-outline btn-sm" style="color:#ff6d00;border-color:#ff6d00" onclick="updateReport(\'' + id + '\',\'pending\')">🔄 Reopen</button>';
+                }
+                /* Suspend/Block shortcut from report */
+                if (r.reportedType === 'passenger' && r.reportedId) {
+                    html += '<button class="btn btn-sm" style="background:#ff6d00;color:#fff;border:none" onclick="suspendPassenger(\'' + r.reportedId + '\')">⏸️ Suspend Passenger</button>';
+                    html += '<button class="btn btn-sm" style="background:#c62828;color:#fff;border:none" onclick="blockPassenger(\'' + r.reportedId + '\')">🚫 Block Passenger</button>';
+                }
+                if (r.reportedType === 'driver' && r.reportedId && r.reportedId !== 'unknown') {
+                    html += '<button class="btn btn-sm" style="background:#ff6d00;color:#fff;border:none" onclick="revokeDriver(\'' + r.reportedId + '\')">⛔ Revoke Driver</button>';
+                }
+                html += '</div></div>';
+                return html;
+            }).join('');
+        }
+
+        function updateReport(id, status) {
+            db.ref('reports/' + id).update({ status: status, updatedAt: Date.now(), updatedBy: 'admin' });
+        }
+
+        function resolveReport(id) {
+            var note = prompt('Add a resolution note (optional):');
+            var upd = { status: 'resolved', resolvedAt: Date.now(), updatedBy: 'admin' };
+            if (note) upd.adminNote = note;
+            db.ref('reports/' + id).update(upd);
+        }
+
+        function dismissReport(id) {
+            if (!confirm('Dismiss this report?')) return;
+            var note = prompt('Reason for dismissal (optional):');
+            var upd = { status: 'dismissed', dismissedAt: Date.now(), updatedBy: 'admin' };
+            if (note) upd.adminNote = note;
+            db.ref('reports/' + id).update(upd);
+        }
+
+        function exportReportsCSV() {
+            var list = Object.entries(allReports);
+            if (!list.length) { alert('No reports to export'); return; }
+            var headers = ['Date','Type','Reporter','Reporter Phone','Reported','Reported Phone','Reason','Details','Status','Admin Note','Ride ID'];
+            var rows = [headers.join(',')];
+            for (var i = 0; i < list.length; i++) {
+                var r = list[i][1];
+                rows.push([
+                    csvEscape(r.timestamp ? new Date(r.timestamp).toLocaleString() : ''),
+                    csvEscape(r.type), csvEscape(r.reporterName), csvEscape(r.reporterPhone),
+                    csvEscape(r.reportedName), csvEscape(r.reportedPhone || ''),
+                    csvEscape(r.reason), csvEscape(r.details || ''),
+                    csvEscape(r.status), csvEscape(r.adminNote || ''), csvEscape(r.rideId || '')
+                ].join(','));
+            }
+            var date = new Date().toISOString().split('T')[0];
+            downloadFile('SwiftDeal_Reports_' + date + '.csv', rows.join('\n'), 'text/csv');
+        }
+
+        /* ══════ PASSENGER ACCOUNT MANAGEMENT ══════ */
+        function suspendPassenger(id) {
+            var p = allPassengers[id];
+            var name = p ? p.name : id;
+            if (!confirm('Suspend passenger "' + name + '"? They will see a warning when opening the app.')) return;
+            var reason = prompt('Reason for suspension:');
+            if (!reason) { alert('Suspension reason is required'); return; }
+            db.ref('passengers/' + id).update({ accountStatus: 'suspended', suspendedAt: Date.now(), suspensionReason: reason, suspendedBy: 'admin' });
+            alert('⏸️ Passenger "' + name + '" suspended.');
+        }
+
+        function blockPassenger(id) {
+            var p = allPassengers[id];
+            var name = p ? p.name : id;
+            if (!confirm('⚠️ BLOCK passenger "' + name + '"? This will permanently prevent them from using the app.')) return;
+            var reason = prompt('Reason for blocking:');
+            if (!reason) { alert('Block reason is required'); return; }
+            db.ref('passengers/' + id).update({ accountStatus: 'blocked', blockedAt: Date.now(), blockReason: reason, blockedBy: 'admin' });
+            alert('🚫 Passenger "' + name + '" blocked.');
+        }
+
+        function unblockPassenger(id) {
+            if (!confirm('Restore this passenger account to active status?')) return;
+            db.ref('passengers/' + id).update({ accountStatus: 'active', restoredAt: Date.now(), restoredBy: 'admin', suspensionReason: null, blockReason: null });
+            alert('✅ Passenger account restored.');
+            closePaxModal();
+        }
+
+        /* ══════ REVENUE & WALLET SYSTEM ══════ */
+
+        /* Calculate revenue and wallet stats from driver data */
+        function updateRevenueStats() {
+            var list = Object.entries(allDrivers);
+            var totalRevenue = 0;
+            var totalWalletBalance = 0;
+            var driverCount = 0;
+            list.forEach(function(e) {
+                var d = e[1];
+                totalRevenue += (d.totalCommissionPaid || 0);
+                totalWalletBalance += (d.walletBalance || 0);
+                if (d.verificationStatus === 'approved') driverCount++;
+            });
+            document.getElementById('pendingPaymentsCount').textContent = '$' + totalRevenue.toFixed(2);
+            document.getElementById('totalRevenueDisplay').textContent = '$' + totalRevenue.toFixed(2);
+            document.getElementById('totalDepositsDisplay').textContent = '$' + totalWalletBalance.toFixed(2);
+            document.getElementById('tabPaymentsCount').textContent = driverCount;
+            renderWalletBalances(list);
+            populateDriverSelect(list);
+        }
+
+        /* Re-render whenever driver data changes */
+        var _origDriverRender = null;
+        db.ref('driverAccounts').on('value', function(snap) {
+            /* allDrivers already updated by earlier listener — just re-run wallet stats */
+            setTimeout(updateRevenueStats, 200);
+        });
+
+        function renderWalletBalances(list) {
+            var approved = list.filter(function(e) { return e[1].verificationStatus === 'approved'; });
+            approved.sort(function(a, b) { return (b[1].walletBalance || 0) - (a[1].walletBalance || 0); });
+            var container = document.getElementById('walletBalancesQueue');
+            if (approved.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#555;padding:30px">No approved drivers yet</p>';
+                return;
+            }
+            container.innerHTML = approved.map(function(e) {
+                var id = e[0], d = e[1];
+                var bal = d.walletBalance || 0;
+                var balColor = bal > 0 ? '#69f0ae' : bal === 0 ? '#ffc107' : '#ff5252';
+                var statusIcon = bal > 0 ? '✅' : '⚠️';
+                return '<div class="driver-card" style="border-left:4px solid ' + balColor + '">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                        '<div><strong style="color:var(--primary)">' + (d.name || 'Unknown') + '</strong>' +
+                        '<span style="color:#888;font-size:12px;margin-left:8px">' + (d.phone || '') + '</span></div>' +
+                        '<span style="font-size:18px;font-weight:800;color:' + balColor + '">' + statusIcon + ' $' + bal.toFixed(2) + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#888">' +
+                        '<span>💵 Earnings: $' + (d.earnings || 0).toFixed(2) + '</span>' +
+                        '<span>🚗 Trips: ' + (d.trips || 0) + '</span>' +
+                        '<span>💰 Commissions paid: $' + (d.totalCommissionPaid || 0).toFixed(2) + '</span>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function populateDriverSelect(list) {
+            var sel = document.getElementById('adminCreditDriver');
+            var current = sel.value;
+            sel.innerHTML = '<option value="">Select driver...</option>';
+            list.filter(function(e) { return e[1].verificationStatus === 'approved'; })
+                .sort(function(a, b) { return (a[1].name || '').localeCompare(b[1].name || ''); })
+                .forEach(function(e) {
+                    sel.innerHTML += '<option value="' + e[0] + '">' + (e[1].name || 'Unknown') + ' (' + (e[1].phone || '') + ') — Balance: $' + (e[1].walletBalance || 0).toFixed(2) + '</option>';
+                });
+            if (current) sel.value = current;
+        }
+
+        function adminCreditWallet() {
+            var dId = document.getElementById('adminCreditDriver').value;
+            var amount = parseFloat(document.getElementById('adminCreditAmount').value);
+            if (!dId) { alert('Please select a driver'); return; }
+            if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+            var d = allDrivers[dId];
+            var name = d ? d.name : dId;
+            if (!confirm('Credit $' + amount.toFixed(2) + ' to ' + name + '\'s wallet?')) return;
+            var newBal = (d.walletBalance || 0) + amount;
+            db.ref('driverAccounts/' + dId).update({ walletBalance: newBal });
+            db.ref('walletTransactions/' + dId).push({
+                type: 'credit', amount: amount, currency: 'USD',
+                description: 'Admin credit', balanceAfter: newBal, timestamp: Date.now()
+            });
+            document.getElementById('adminCreditAmount').value = '';
+            alert('✅ $' + amount.toFixed(2) + ' credited to ' + name + '\'s wallet.\nNew balance: $' + newBal.toFixed(2));
+        }
+
+        function exportPaymentsCSV() {
+            var list = Object.entries(allDrivers).filter(function(e) { return e[1].verificationStatus === 'approved'; });
+            if (list.length === 0) { alert('No driver data to export'); return; }
+            var rows = ['Driver,Phone,Earnings,Trips,Wallet Balance,Total Commission Paid'];
+            list.forEach(function(e) {
+                var d = e[1];
+                rows.push([
+                    csvEscape(d.name || ''), csvEscape(d.phone || ''),
+                    d.earnings || 0, d.trips || 0,
+                    d.walletBalance || 0, d.totalCommissionPaid || 0
+                ].join(','));
+            });
+            var date = new Date().toISOString().split('T')[0];
+            downloadFile('SwiftDeal_Revenue_' + date + '.csv', rows.join('\n'), 'text/csv');
+        }
+
+        /* ══════════════════════════════════════════════════════════
+           RATINGS TAB
+        ══════════════════════════════════════════════════════════ */
+        var allRatings = {};
+        db.ref('ratings').on('value', function(snap) {
+            allRatings = snap.val() || {};
+            var list = Object.entries(allRatings).sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); });
+            document.getElementById('tabRatingsCount').textContent = list.length;
+            document.getElementById('totalReviewsDisplay').textContent = list.length;
+
+            /* Stats */
+            var totalTips = 0, totalStars = 0, stars = {1:0, 2:0, 3:0, 4:0, 5:0};
+            list.forEach(function(e) {
+                var r = e[1];
+                totalStars += (r.rating || 0);
+                totalTips += (r.tip || 0);
+                if (r.rating >= 1 && r.rating <= 5) stars[r.rating]++;
+            });
+            var avg = list.length ? (totalStars / list.length).toFixed(1) : '—';
+            document.getElementById('avgRatingDisplay').textContent = avg;
+            document.getElementById('avgRatingStat').textContent = avg;
+            document.getElementById('totalTipsDisplay').textContent = '$' + totalTips.toLocaleString();
+            document.getElementById('fiveStarPercent').textContent = list.length ? Math.round((stars[5] / list.length) * 100) + '%' : '0%';
+
+            /* Distribution bars */
+            var distHtml = '';
+            for (var s = 5; s >= 1; s--) {
+                var pct = list.length ? Math.round((stars[s] / list.length) * 100) : 0;
+                distHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+                    '<span style="color:#f9d71c;font-size:13px;font-weight:700;min-width:20px">' + s + '★</span>' +
+                    '<div style="flex:1;background:#222;border-radius:4px;height:18px;overflow:hidden">' +
+                    '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#f9d71c,#ff9800);border-radius:4px;transition:width .4s"></div></div>' +
+                    '<span style="color:#888;font-size:11px;min-width:40px;text-align:right">' + stars[s] + ' (' + pct + '%)</span></div>';
+            }
+            document.getElementById('ratingDistribution').innerHTML = distHtml;
+
+            /* Top rated drivers */
+            var driverRatings = {};
+            list.forEach(function(e) {
+                var r = e[1];
+                if (!r.driverId) return;
+                if (!driverRatings[r.driverId]) driverRatings[r.driverId] = { total: 0, count: 0, tips: 0, name: '' };
+                driverRatings[r.driverId].total += r.rating;
+                driverRatings[r.driverId].count++;
+                driverRatings[r.driverId].tips += (r.tip || 0);
+            });
+            /* Enrich with driver names */
+            Object.keys(driverRatings).forEach(function(did) {
+                if (allDrivers[did]) driverRatings[did].name = allDrivers[did].name || did;
+                else driverRatings[did].name = did.substring(0, 8);
+            });
+            var topDrivers = Object.entries(driverRatings).sort(function(a, b) {
+                return (b[1].total / b[1].count) - (a[1].total / a[1].count);
+            }).slice(0, 10);
+            document.getElementById('topRatedDrivers').innerHTML = topDrivers.length === 0 ?
+                '<p style="color:#555;font-size:12px">No ratings yet</p>' :
+                topDrivers.map(function(e, i) {
+                    var d = e[1], avgD = (d.total / d.count).toFixed(1);
+                    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #222">' +
+                        '<span style="color:#f9d71c;font-size:16px;font-weight:800;min-width:30px">#' + (i + 1) + '</span>' +
+                        '<div style="flex:1"><strong style="color:#fff;font-size:13px">' + d.name + '</strong><br>' +
+                        '<span style="font-size:11px;color:#888">' + d.count + ' reviews • Tips: $' + d.tips + '</span></div>' +
+                        '<span style="background:#1a1a0a;border:1px solid #f9d71c;border-radius:8px;padding:4px 10px;font-size:14px;font-weight:800;color:#f9d71c">⭐ ' + avgD + '</span></div>';
+                }).join('');
+
+            /* Recent reviews list */
+            document.getElementById('ratingsQueue').innerHTML = list.length === 0 ?
+                '<p style="color:#555;font-size:13px;text-align:center;padding:30px">No ratings yet</p>' :
+                list.slice(0, 50).map(function(e) {
+                    var r = e[1];
+                    var driverName = (r.driverId && allDrivers[r.driverId]) ? allDrivers[r.driverId].name : (r.driverId || 'Unknown').substring(0, 10);
+                    var starsHtml = '';
+                    for (var i = 1; i <= 5; i++) starsHtml += i <= r.rating ? '⭐' : '☆';
+                    var tagsHtml = (r.tags && r.tags.length) ? r.tags.map(function(t) {
+                        return '<span style="background:#222;border:1px solid #333;border-radius:10px;padding:2px 8px;font-size:10px;color:#aaa">' + t + '</span>';
+                    }).join(' ') : '';
+                    return '<div style="background:var(--card);border:1px solid #222;border-radius:12px;padding:14px;margin-bottom:8px">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                        '<div><span style="font-size:14px">' + starsHtml + '</span>' +
+                        '<span style="font-size:11px;color:#888;margin-left:8px">for <strong style="color:#fff">' + driverName + '</strong></span></div>' +
+                        '<span style="font-size:10px;color:#555">' + new Date(r.timestamp).toLocaleString() + '</span></div>' +
+                        (tagsHtml ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">' + tagsHtml + '</div>' : '') +
+                        (r.comment ? '<p style="font-size:12px;color:#ccc;margin-top:8px;font-style:italic">"' + r.comment + '"</p>' : '') +
+                        (r.tip ? '<div style="margin-top:6px;font-size:12px;color:#69f0ae;font-weight:700">💵 Tip: $' + r.tip + '</div>' : '') +
+                        '</div>';
+                }).join('');
+        });
+
+        /* ══════════════════════════════════════════════════════════
+           RIDES TAB
+        ══════════════════════════════════════════════════════════ */
+        var allRides = {}, currentRideFilter = 'all';
+        db.ref('requests').on('value', function(snap) {
+            allRides = snap.val() || {};
+            var list = Object.entries(allRides).sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); });
+            document.getElementById('tabRidesCount').textContent = list.length;
+            document.getElementById('totalRidesDisplay').textContent = list.length;
+            document.getElementById('totalRides').textContent = list.length;
+
+            var completed = 0, cancelled = 0, scheduled = 0, promo = 0, active = 0;
+            list.forEach(function(e) {
+                var r = e[1];
+                if (r.status === 'completed') completed++;
+                if (r.status === 'cancelled') cancelled++;
+                if (r.scheduled) scheduled++;
+                if (r.promoCode) promo++;
+                if (['pending', 'accepted', 'confirmed', 'arrived', 'in_progress'].indexOf(r.status) >= 0) active++;
+            });
+            document.getElementById('completedRidesDisplay').textContent = completed;
+            document.getElementById('cancelledRidesDisplay').textContent = cancelled;
+            document.getElementById('scheduledRidesDisplay').textContent = scheduled;
+            document.getElementById('promoRidesDisplay').textContent = promo;
+            document.getElementById('activeRidesDisplay').textContent = active;
+
+            renderRides(list);
+        });
+
+        window.filterRides = function(filter) {
+            currentRideFilter = filter;
+            var list = Object.entries(allRides).sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); });
+            renderRides(list);
+        };
+
+        function renderRides(list) {
+            if (currentRideFilter !== 'all') {
+                if (currentRideFilter === 'scheduled') {
+                    list = list.filter(function(e) { return e[1].scheduled; });
+                } else {
+                    list = list.filter(function(e) { return e[1].status === currentRideFilter; });
+                }
+            }
+            var el = document.getElementById('ridesQueue');
+            if (list.length === 0) { el.innerHTML = '<p style="color:#555;font-size:13px;text-align:center;padding:30px">No rides found</p>'; return; }
+            el.innerHTML = list.slice(0, 100).map(function(e) {
+                var id = e[0], r = e[1];
+                var statusColors = { pending: '#ff9800', accepted: '#2196f3', confirmed: '#2196f3', arrived: '#4caf50', in_progress: '#00bcd4', completed: '#4caf50', cancelled: '#f44336', scheduled: '#7c4dff' };
+                var st = r.scheduled && r.status === 'scheduled' ? 'scheduled' : r.status;
+                var statusColor = statusColors[st] || '#888';
+                var driverName = r.driverName || (r.driverId && allDrivers[r.driverId] ? allDrivers[r.driverId].name : '—');
+                return '<div style="background:var(--card);border:1px solid #222;border-radius:12px;padding:14px;margin-bottom:8px">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+                    '<div style="display:flex;align-items:center;gap:8px">' +
+                    '<span style="background:rgba(255,255,255,.1);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;color:#fff">' + (r.type || 'RIDE').toUpperCase() + '</span>' +
+                    '<span style="background:' + statusColor + '22;border:1px solid ' + statusColor + ';color:' + statusColor + ';padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">' + (st || 'unknown').toUpperCase() + '</span>' +
+                    (r.promoCode ? '<span style="background:#1b5e20;color:#69f0ae;border:1px solid #2e7d32;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">🎟️ ' + r.promoCode + '</span>' : '') +
+                    (r.scheduled ? '<span style="background:#1a237e;color:#82b1ff;border:1px solid #283593;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700">📅 Sched</span>' : '') +
+                    '</div>' +
+                    '<span style="font-size:18px;font-weight:800;color:var(--primary)">' + (r.currency || '') + ' ' + (r.offer || 0) + '</span></div>' +
+                    '<div style="font-size:12px;color:#ccc;margin-bottom:4px">📍 ' + (r.pickup || '—') + '</div>' +
+                    '<div style="font-size:12px;color:#ccc;margin-bottom:8px">🏁 ' + (r.destination || '—') + '</div>' +
+                    '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888">' +
+                    '<span>👤 ' + (r.passengerName || 'Guest') + '</span>' +
+                    '<span>🚗 ' + driverName + '</span>' +
+                    '<span>📅 ' + new Date(r.timestamp || 0).toLocaleString() + '</span></div>' +
+                    (r.instructions ? '<div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:6px;padding:6px 8px;margin-top:8px;font-size:11px;color:#69f0ae">📝 ' + r.instructions + '</div>' : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        /* ═══ EXPORT RATINGS CSV ═══ */
+        function exportRatingsCSV() {
+            var list = Object.entries(allRatings);
+            if (list.length === 0) { alert('No ratings to export'); return; }
+            var rows = ['Date,Driver,Rating,Tags,Comment,Tip'];
+            list.sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); }).forEach(function(e) {
+                var r = e[1];
+                var driverName = (r.driverId && allDrivers[r.driverId]) ? allDrivers[r.driverId].name : (r.driverId || 'Unknown');
+                rows.push([
+                    new Date(r.timestamp).toISOString(),
+                    csvEscape(driverName),
+                    r.rating || 0,
+                    csvEscape((r.tags || []).join('; ')),
+                    csvEscape(r.comment || ''),
+                    r.tip || 0
+                ].join(','));
+            });
+            downloadFile('SwiftDeal_Ratings_' + new Date().toISOString().split('T')[0] + '.csv', rows.join('\n'), 'text/csv');
+        }
+
+        /* ═══ EXPORT RIDES CSV ═══ */
+        function exportRidesCSV() {
+            var list = Object.entries(allRides);
+            if (list.length === 0) { alert('No rides to export'); return; }
+            var rows = ['Date,Type,Status,Pickup,Destination,Passenger,Driver,Offer,Currency,PromoCode,Scheduled'];
+            list.sort(function(a, b) { return (b[1].timestamp || 0) - (a[1].timestamp || 0); }).forEach(function(e) {
+                var r = e[1];
+                var driverName = r.driverName || (r.driverId && allDrivers[r.driverId] ? allDrivers[r.driverId].name : '');
+                rows.push([
+                    new Date(r.timestamp || 0).toISOString(),
+                    csvEscape(r.type || 'ride'),
+                    csvEscape(r.status || ''),
+                    csvEscape(r.pickup || ''),
+                    csvEscape(r.destination || ''),
+                    csvEscape(r.passengerName || ''),
+                    csvEscape(driverName),
+                    r.offer || 0,
+                    csvEscape(r.currency || ''),
+                    csvEscape(r.promoCode || ''),
+                    r.scheduled ? 'Yes' : 'No'
+                ].join(','));
+            });
+            downloadFile('SwiftDeal_Rides_' + new Date().toISOString().split('T')[0] + '.csv', rows.join('\n'), 'text/csv');
+        }
+
+        /* ══════════════════════════════════════
+           ADMIN NOTIFICATION HELPERS
+        ══════════════════════════════════════ */
+        function showAdminToast(msg) {
+            var el = document.getElementById('adminToast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'adminToast';
+                el.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:16px 24px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;transition:transform .4s,opacity .4s;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:400px;transform:translateX(120%);opacity:0;border:1px solid #4caf50';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.style.transform = 'translateX(0)';
+            el.style.opacity = '1';
+            clearTimeout(el._timer);
+            el._timer = setTimeout(function() {
+                el.style.transform = 'translateX(120%)';
+                el.style.opacity = '0';
+            }, 5000);
+        }
+
+        /* ═══ PUSH NOTIFICATIONS SYSTEM ═══ */
+        function loadPushStats() {
+            db.ref('passengerTokens').once('value', function(s) {
+                var pCount = s.val() ? Object.keys(s.val()).length : 0;
+                document.getElementById('pushPaxCount').textContent = pCount;
+                db.ref('driverTokens').once('value', function(d) {
+                    var dCount = d.val() ? Object.keys(d.val()).length : 0;
+                    document.getElementById('pushDrvCount').textContent = dCount;
+                    document.getElementById('pushTotalCount').textContent = pCount + dCount;
+                    document.getElementById('tabNotifCount').textContent = pCount + dCount;
+                });
+            });
+            /* Count sent today */
+            var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+            db.ref('pushNotifications').orderByChild('sentAt').startAt(todayStart.getTime()).once('value', function(s) {
+                document.getElementById('pushSentToday').textContent = s.val() ? Object.keys(s.val()).length : 0;
+            });
+            /* Load history */
+            db.ref('pushNotifications').orderByChild('sentAt').limitToLast(20).once('value', function(s) {
+                var data = s.val();
+                if (!data) { document.getElementById('notifHistory').innerHTML = '<div style="color:#555;text-align:center;padding:20px">No notifications sent yet</div>'; return; }
+                var items = Object.entries(data).sort(function(a,b) { return (b[1].sentAt||0) - (a[1].sentAt||0); });
+                document.getElementById('notifHistory').innerHTML = items.map(function(item) {
+                    var n = item[1];
+                    var dt = new Date(n.sentAt).toLocaleString();
+                    var badge = n.audience === 'all' ? '<span style="background:#1a237e;color:#82b1ff;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700">ALL</span>' :
+                                n.audience === 'passengers' ? '<span style="background:#0d47a1;color:#90caf9;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700">PAX</span>' :
+                                '<span style="background:#1b5e20;color:#69f0ae;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700">DRV</span>';
+                    return '<div style="background:#111;border:1px solid #222;border-radius:10px;padding:12px;margin-bottom:8px">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:700;color:#fff;font-size:13px">' + (n.title||'') + '</span>' + badge + '</div>' +
+                        '<div style="color:#aaa;font-size:11px;margin-bottom:4px">' + (n.body||'') + '</div>' +
+                        '<div style="color:#555;font-size:10px">' + dt + '</div></div>';
+                }).join('');
+            });
+        }
+        setTimeout(loadPushStats, 2000);
+
+        window.useNotifTemplate = function(type) {
+            var t = document.getElementById('notifTitle');
+            var b = document.getElementById('notifBody');
+            switch(type) {
+                case 'tester':
+                    t.value = 'Hey! Quick favor? 🙏';
+                    b.value = 'Thank you for installing SwiftDeal! Could you please open the app for 60 seconds today, click around, and close it? It helps us pass Google\'s review! Also, a quick rating on the Play Store would mean the world to us. ⭐';
+                    break;
+                case 'review':
+                    t.value = 'Rate SwiftDeal ⭐';
+                    b.value = 'Enjoying SwiftDeal? Please take 10 seconds to leave a review on Google Play. Your feedback helps us reach more people in the Caribbean!';
+                    break;
+                case 'update':
+                    t.value = 'SwiftDeal just got better! 🚀';
+                    b.value = 'A new update is available with faster booking, improved AI voice commands, and better driver tracking. Update now for the best experience!';
+                    break;
+                case 'promo':
+                    t.value = 'Special offer! 💵';
+                    b.value = 'Book your next ride with SwiftDeal and enjoy special rates this week. Pay with cash, name your price, and ride in style!';
+                    break;
+                case 'driver_needed':
+                    t.value = 'Drive & Earn with SwiftDeal 🚗';
+                    b.value = 'Earn money on your own schedule! SwiftDeal drivers keep 100% of every fare. Sign up as a driver today and start earning.';
+                    break;
+                case 'welcome':
+                    t.value = 'Welcome to SwiftDeal! 👋';
+                    b.value = 'Thanks for joining SwiftDeal! Book rides, send packages, and pay with cash. Your driver keeps 100% of fares. Open the app to get started!';
+                    break;
+            }
+            /* Auto scroll to compose area */
+            document.getElementById('notifTitle').scrollIntoView({behavior:'smooth', block:'center'});
+        };
+
+        window.sendAdminNotification = function() {
+            var title = document.getElementById('notifTitle').value.trim();
+            var body = document.getElementById('notifBody').value.trim();
+            var audience = document.getElementById('notifAudience').value;
+            if (!title || !body) { alert('Please fill in both title and message.'); return; }
+
+            var notifId = 'notif_' + Date.now();
+
+            /* 1. Save to history */
+            db.ref('pushNotifications/' + notifId).set({
+                title: title, body: body, audience: audience,
+                sentAt: firebase.database.ServerValue.TIMESTAMP, sentBy: 'admin'
+            });
+
+            /* 2. Set active notification — all OPEN apps show it immediately */
+            db.ref('activeNotification').set({
+                title: title, body: body, audience: audience,
+                sentAt: Date.now(), id: notifId
+            }).then(function() {
+                /* Count recipients */
+                var count = 0;
+                var promises = [];
+                if (audience === 'all' || audience === 'passengers') {
+                    promises.push(db.ref('passengerTokens').once('value').then(function(s) { if (s.val()) count += Object.keys(s.val()).length; }));
+                }
+                if (audience === 'all' || audience === 'drivers') {
+                    promises.push(db.ref('driverTokens').once('value').then(function(s) { if (s.val()) count += Object.keys(s.val()).length; }));
+                }
+                Promise.all(promises).then(function() {
+                    var msg = '\u2705 Notification saved!\n\n' +
+                        '\u2022 ' + count + ' ' + audience + ' users will see it when they open the app.\n\n' +
+                        '\u2022 For BACKGROUND push (closed app + lock screen):\n' +
+                        '   Go to Firebase Console \u2192 Messaging \u2192 New Campaign\n\n' +
+                        'Opening Firebase Console now...';
+                    alert(msg);
+                    document.getElementById('notifTitle').value = '';
+                    document.getElementById('notifBody').value = '';
+                    loadPushStats();
+                    /* Copy notification text for easy paste into Firebase Console */
+                    if (navigator.clipboard) navigator.clipboard.writeText(title + '\n' + body);
+                    /* Open Firebase Console Messaging */
+                    window.open('https://console.firebase.google.com/project/swiftdeal-3cee9/messaging', '_blank');
+                });
+            }).catch(function(e) { alert('\u274c Error: ' + e.message); });
+        };
+
+        /* Quick link to Firebase Console Messaging */
+        window.openFirebaseMessaging = function() {
+            window.open('https://console.firebase.google.com/project/swiftdeal-3cee9/messaging', '_blank');
+        };
+
+        function playAdminNotifSound() {
+            /* Loud, attention-grabbing alarm — louder and longer than the old beep */
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                /* Resume in case suspended (autoplay policy) */
+                if (ctx.state === 'suspended') ctx.resume();
+                /* Two-tone urgent alarm, repeating 3 times */
+                var pattern = [880, 660, 880, 660, 880, 660];
+                pattern.forEach(function(freq, i) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.22);
+                    osc.type = 'square';
+                    gain.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.22);
+                    gain.gain.exponentialRampToValueAtTime(0.6, ctx.currentTime + i * 0.22 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.22 + 0.2);
+                    osc.start(ctx.currentTime + i * 0.22);
+                    osc.stop(ctx.currentTime + i * 0.22 + 0.21);
+                });
+            } catch(e) { console.warn('Audio failed', e); }
+
+            /* Vibration — works on Android Chrome when admin tab is focused */
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate([300, 100, 300, 100, 300, 100, 600]);
+                }
+            } catch(e) {}
+        }
+
+        function showBrowserNotification(title, body) {
+            /* Browser notification works even when admin tab is in background */
+            try {
+                if (!('Notification' in window)) return;
+                if (Notification.permission === 'granted') {
+                    var n = new Notification(title, {
+                        body: body,
+                        icon: '/icons/icon-192x192.png',
+                        badge: '/icons/icon-96x96.png',
+                        tag: 'swiftdeal-admin',
+                        requireInteraction: true,
+                        vibrate: [300, 100, 300, 100, 300]
+                    });
+                    n.onclick = function() {
+                        window.focus();
+                        n.close();
+                    };
+                    /* Auto-close after 30s if not clicked */
+                    setTimeout(function(){ try { n.close(); } catch(e){} }, 30000);
+                }
+            } catch(e) { console.warn('Notification failed', e); }
+        }
+
+        /* Request notification permission once on load */
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    setTimeout(function() {
+                        Notification.requestPermission().then(function(perm) {
+                            if (perm === 'granted') {
+                                showAdminToast('🔔 Notifications enabled — you will be alerted on new signups');
+                            }
+                        });
+                    }, 2000);
+                }
+            } catch(e) {}
+        });
+    </script>
+</body>
+</html>

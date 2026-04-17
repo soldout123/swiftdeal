@@ -14,7 +14,10 @@
       "headers": [
         {
           "source": "/.well-known/assetlinks.json",
-          "headers": [{ "key": "Content-Type", "value": "application/json" }]
+          "headers": [
+            { "key": "Content-Type", "value": "application/json" },
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
         },
         {
           "source": "**/*.html",
@@ -35,17 +38,15 @@
           "source": "/",
           "destination": "/driver.html",
           "type": 302
-        },
-        {
-          "source": "/index.html",
-          "destination": "/driver.html",
-          "type": 302
         }
       ],
       "headers": [
         {
           "source": "/.well-known/assetlinks.json",
-          "headers": [{ "key": "Content-Type", "value": "application/json" }]
+          "headers": [
+            { "key": "Content-Type", "value": "application/json" },
+            { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          ]
         },
         {
           "source": "**/*.html",
@@ -56,23 +57,7 @@
           "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
         }
       ]
-    },
-    {
-      "target": "admin-site",
-      "public": "www",
-      "ignore": ["firebase.json", "**/node_modules/**"],
-      "redirects": [
-        {
-          "source": "/",
-          "destination": "/host.html",
-          "type": 302
-        },
-        {
-          "source": "/index.html",
-          "destination": "/host.html",
-          "type": 302
-        }
-      ]
     }
   ]
 }
+
