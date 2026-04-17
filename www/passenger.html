@@ -554,7 +554,7 @@
                     if (d.latitude && map) map.setCenter({ lat: d.latitude, lng: d.longitude });
                 }
             }).catch(() => {});
-        }, { enableHighAccuracy: true, timeout: 10000 });
+        }, { enableHighAccuracy: false, timeout: 15000 });
     }
     
     function setupAutocomplete() {
@@ -732,7 +732,7 @@
                     calcFare();
                 }
             });
-        }, () => alert("Location unavailable."), { enableHighAccuracy: true });
+        }, () => alert("Location unavailable."), { enableHighAccuracy: false });
     };
     
     window.centerOnLocation = () => { if (passengerLocation && map) { map.setCenter(passengerLocation); map.setZoom(16); } else useLiveLocation(); };
