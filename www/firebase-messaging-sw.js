@@ -1,5 +1,5 @@
-/* Firebase Messaging Service Worker — SwiftDeal v9.0.0.0 */
-const SW_VERSION = 'v9.0.0.0';
+/* Firebase Messaging Service Worker — SwiftDeal v9.2.0.0 */
+const SW_VERSION = 'v9.2.0.0';
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 

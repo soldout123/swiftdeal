@@ -2,14 +2,15 @@
   {
     "relation": [
       "delegate_permission/common.handle_all_urls",
-      "delegate_permission/common.get_location"
+      "delegate_permission/common.get_login_creds",
+      "delegate_permission/common.use_as_origin"
     ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.swiftdeal.app",
       "sha256_cert_fingerprints": [
         "6F:FD:63:CC:43:F2:06:1F:CD:98:2A:F1:EE:A4:FB:66:3F:E8:A9:B8:FF:A7:9A:CD:78:A2:8D:FB:61:85:4A:CA",
-        "6F:FD:63:CC:43:F2:06:1F:CD:98:2A:F1:EE:A4:FB:66:3F:E8:A9:B8:FF:A7:9A:CD:78:A2:8D:FB:61:85:4A:CA"
+        "81:49:60:DE:D2:9A:FE:46:0E:E5:01:58:FF:A9:CF:FB:EF:E7:5F:2E:3F:41:0F:F3:F2:71:5C:53:AB:34:0B:CE"
       ]
     }
   }

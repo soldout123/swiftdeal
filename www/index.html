@@ -2,33 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- WELCOME PAGE REDIRECT — web browser visitors only -->
+    <!-- WELCOME PAGE REDIRECT — first-time visitors only (skipped inside native app) -->
     <script>
     (function(){
         try {
-            /* ★ Skip welcome entirely inside native apps (iOS WKWebView + Android TWA).
-               The redirect chain (index → welcome → index) causes Chrome to suppress
-               the location permission dialog inside TWAs. App store users don't need
-               the welcome page anyway — they already downloaded the app. */
-            var isNativeApp = navigator.standalone === true
-                || window.matchMedia('(display-mode: standalone)').matches
-                || window.matchMedia('(display-mode: fullscreen)').matches;
-            if (isNativeApp) return;
-
-            /* For web browser visitors: show welcome once */
-            var lsFlag = false;
-            try { lsFlag = !!(localStorage.getItem('swiftPaxPhone') || localStorage.getItem('swiftSeenWelcome')); } catch(e) {}
-            var cookieFlag = document.cookie.indexOf('swiftSeenWelcome=1') !== -1;
-            var savedPhone = lsFlag || cookieFlag;
+            var isIOSNativeApp = (window.navigator.standalone === true);
+            var isStandaloneDisplay = false;
+            try { isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches; } catch(e){}
+            var isAndroidTWA = document.referrer.indexOf('android-app://') === 0;
+            var isNativeApp = isIOSNativeApp || isStandaloneDisplay || isAndroidTWA;
+            var savedPhone = localStorage.getItem('swiftPaxPhone') || localStorage.getItem('swiftSeenWelcome');
+            var cookieSeen = document.cookie.indexOf('swiftSeenWelcome=1') !== -1;
             var fromWelcome = document.referrer.indexOf('/welcome.html') !== -1;
             var skipParam = window.location.search.indexOf('nowelcome') !== -1;
-            if (!savedPhone && !fromWelcome && !skipParam) {
-                try {
-                    var d = new Date();
-                    d.setFullYear(d.getFullYear() + 5);
-                    document.cookie = "swiftSeenWelcome=1; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
-                } catch(e) {}
+            if (!isNativeApp && !savedPhone && !cookieSeen && !fromWelcome && !skipParam) {
                 window.location.replace('/welcome.html');
+            } else if (isNativeApp) {
+                try { localStorage.setItem('swiftSeenWelcome','1'); } catch(e){}
+                document.cookie = "swiftSeenWelcome=1; max-age=31536000; path=/";
             }
         } catch(e) {}
     })();
@@ -47,7 +38,7 @@
         }
     })();
     </script>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json.1">
     <meta name="theme-color" content="#c8ff00">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -61,7 +52,7 @@
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json.1">
     <title>SwiftDeal - Global Ride & Delivery Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -410,47 +401,32 @@
                 if(window.caches){caches.keys().then(function(names){names.forEach(function(n){caches.delete(n);});});}
             }
 
-            /* ★ Request LOCATION first and ALONE — Android can only show one permission
-               dialog at a time. If notification/mic dialogs fire while location is pending,
-               the location dialog never appears and getCurrentPosition returns DENIED. */
             setTimeout(function(){
+                /* 1. LOCATION — silently trigger Android permission dialog, no toast here */
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
-                        function(pos){
-                            console.log('Location granted');
-                            /* Location resolved — NOW safe to request other permissions */
-                            requestOtherPermissions();
-                        },
-                        function(err){
-                            console.log('Location upfront check:', err.code);
-                            /* Don't show toast here — autoLocate() handles the real error.
-                               Still request other permissions after location resolves. */
-                            requestOtherPermissions();
-                        },
-                        {enableHighAccuracy:true, timeout:10000}
+                        function(pos){ console.log('Location granted'); },
+                        function(err){ console.log('Upfront location probe err:', err.code); },
+                        {enableHighAccuracy:false, timeout:10000}
                     );
-                } else {
-                    requestOtherPermissions();
                 }
-            }, 500);
-
-            function requestOtherPermissions(){
-                /* 2. NOTIFICATIONS — 1s after location resolves */
+                
+                /* 2. NOTIFICATIONS */
                 setTimeout(function(){
                     if ('Notification' in window && Notification.permission !== 'granted') {
                         Notification.requestPermission();
                     }
                 }, 1000);
 
-                /* 3. MICROPHONE — 3s after location resolves */
+                /* 3. MICROPHONE */
                 setTimeout(function(){
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                         navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
                             stream.getTracks().forEach(function(t){t.stop();});
                         }).catch(function(){});
                     }
-                }, 3000);
-            }
+                }, 2000);
+            }, 500);
         });
     })();
     </script>
@@ -572,8 +548,8 @@
             <p id="paxStep2Phone" style="color:var(--primary);text-align:center;margin-bottom:16px;font-size:14px;font-weight:700"></p>
             <input class="auth-input" type="tel" id="paxSmsCode" placeholder="123456" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:8px;font-weight:800">
             <button class="auth-btn" onclick="verifyPaxSmsCode()" id="paxStep2Btn">VERIFY & CONTINUE</button>
-            <p style="text-align:center;margin-top:10px;font-size:12px"><a href="#" onclick="paxBackToStep1();return false" style="color:#888">← Back / Resend</a></p>
-            <p id="paxSmsFallback" style="display:none;text-align:center;margin-top:10px;font-size:11px;color:#f9d71c">SMS delivery failed — <a href="#" onclick="paxSkipSms();return false" style="color:var(--primary);font-weight:700">Continue without code</a></p>
+            <p style="text-align:center;margin-top:10px;font-size:12px"><a href="index.html#" onclick="paxBackToStep1();return false" style="color:#888">← Back / Resend</a></p>
+            <p id="paxSmsFallback" style="display:none;text-align:center;margin-top:10px;font-size:11px;color:#f9d71c">SMS delivery failed — <a href="index.html#" onclick="paxSkipSms();return false" style="color:var(--primary);font-weight:700">Continue without code</a></p>
         </div>
     </div>
 </div>
@@ -587,26 +563,26 @@
         <p style="color:var(--primary);font-size:12px;font-weight:700;word-break:break-all;margin-bottom:14px">swiftdeal-3cee9.web.app/welcome.html</p>
         <button class="auth-btn" onclick="downloadQr()" style="margin-bottom:8px">💾 SAVE TO GALLERY</button>
         <button class="auth-btn" onclick="shareQr()" style="background:#25d366;color:#fff;margin-bottom:8px">📱 SHARE ON WHATSAPP</button>
-        <p style="text-align:center;margin-top:6px"><a href="#" onclick="closeQr();return false" style="color:#888;font-size:13px">← Close</a></p>
+        <p style="text-align:center;margin-top:6px"><a href="index.html#" onclick="closeQr();return false" style="color:#888;font-size:13px">← Close</a></p>
     </div>
 </div>
 <div class="sidenav-overlay" id="sidenavOverlay" onclick="closeNav()"></div>
 <div class="sidenav" id="sidenav">
     <div class="sidenav-header"><h2 class="notranslate">⚡ SwiftDeal</h2><p>Ride • Deliver • Rent</p><p id="paxGreeting" style="color:var(--primary);font-size:13px;font-weight:700;margin-top:6px"></p></div>
     <div class="sidenav-links">
-        <a href="#" onclick="closeNav()">🏠 Home</a>
-        <a href="#" onclick="openProfile()">👤 Profile</a>
-        <a href="#" onclick="showMyTrips()">📋 My Trips</a>
-        <a href="#" onclick="showFavoriteDrivers()">❤️ Favorite Drivers</a>
-        <a href="#" onclick="showReferral()">🎁 Refer & Earn</a>
-        <a href="#" onclick="showQrCode()">📲 Share via QR Code</a>
-        <a href="#" onclick="openSettings()">⚙️ Settings</a>
-        <a href="#" onclick="shareApp()">📤 Share App</a>
+        <a href="index.html#" onclick="closeNav()">🏠 Home</a>
+        <a href="index.html#" onclick="openProfile()">👤 Profile</a>
+        <a href="index.html#" onclick="showMyTrips()">📋 My Trips</a>
+        <a href="index.html#" onclick="showFavoriteDrivers()">❤️ Favorite Drivers</a>
+        <a href="index.html#" onclick="showReferral()">🎁 Refer & Earn</a>
+        <a href="index.html#" onclick="showQrCode()">📲 Share via QR Code</a>
+        <a href="index.html#" onclick="openSettings()">⚙️ Settings</a>
+        <a href="index.html#" onclick="shareApp()">📤 Share App</a>
         <a href="https://youtube.com/@swiftdealrides?si=TgWazJuzSe2D3-dQ" target="_blank" style="display:flex;align-items:center;gap:10px;border-left-color:#ff0000"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV4AAAFeBAMAAAA/BWopAAAAJFBMVEVHcEz/AAD/AAD/AAD/AAD/AAD/////3Nz/q6v/cHD/ODj/AAAx7FNbAAAABnRSTlMAHVCCtuDN/3+oAAADJUlEQVR42u3cQW7aQBSAYZP0AB6a7MEkq2xazK6bJJgVqyK88h44Au4NwhHKEbxrsNTqXa6oTTRSFpEJfraf9H8n+GUNzxg8EwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAXaEXdJJzrh9F0SiO42ny1iQ+iqJo6Jxrtb/n+v8aj01pmmbyvvQoSaZxPI4i55qP7Y+SWZrKR2TpMhkPw6BB/Ukm5ymnw+Yu7k0m5ysfw4ZyJ1KPadjM1ZW6LJoIvpL6PATqLuZSn8Mg0HYrdVqoX95M6lQOmli9hlbwXOp1CHWXg3gWFsSViKkF8U3q9hwo6s1FLC3gC6mf5gL+JPW7D/RcS/2+B3rupH6/TIwH71l3PFgaEL1M6leGmuPM1EC7FA1f6H1xJRrujfU+aN7eTN3gbulVvSHf0Uuv0tcz77nF3j97W72/N3tbvatN0Z3eeYXeVX5q8KHd3lVurHe1M9a73nWjt1exd7XeKzxwKvauNvtO9GZVe0+aamX7vX6qWeld5cZ6V7vWey8q95401cpB671+qrXaK1V7T5tq7ff6qWbh+np5YeL6ermNXm9nrHe9a+8HysvKvadNtUEnev1UM3J9/VQz0evlhYleLzfW+8PYehBTvdvCVO+msHa/sNS7/immendiqvdJTPXmYqp3W5jq3RRiotdPMoVehecLP8ksXd+deAae357EVG8upnq3hZleP8ks/D7pJ5lCr8Lv1X6S2endiWfg/4AnMdWbi0Kv3v+F26I7L9RW6PWTrAv/d6u8D3PgfSPdXt4/M9p7KxoWvP9r9P3qT6Lhnv0Bur3sb/EPRPUrB+x3eqWyn4z9err7Idlvqrufl/3SmgOtDNnv712b+Lh5lya+7Xg9hfNATC2IBefZqJ4XxHlMb33OpC7l16ABN1KXR0PHy/kD5vSNZnK+5ThojBvNMjlHuRy7oEkuipNZKh+RLpM4Cls6MDN+PTBT3lWW6TEzieN4HA1dhVjdcOdeziOdJG9Mp3EcR0fO+cyOCd1/YcjhtwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADs+gtWkB2hl5uPhwAAAABJRU5ErkJggg==" style="width:28px;height:28px;object-fit:contain;border-radius:4px" alt="YouTube"> YouTube</a>
         <a href="https://www.facebook.com/share/17z5vpBHQJ/" target="_blank" style="display:flex;align-items:center;gap:10px;border-left-color:#1877f2"><img src="data:image/png;base64,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" style="width:28px;height:28px;object-fit:contain;border-radius:6px" alt="Facebook"> Facebook</a>
         <a href="terms.html">📜 Terms of Service</a><a href="privacy.html">🔒 Privacy Policy</a>
-        <a href="/driver.html" class="driver-link">🚗 BECOME A DRIVER</a>
-        <a href="#" id="paxLogoutLink" onclick="passengerLogout()" style="color:var(--danger);margin-top:16px;border-left-color:transparent">🚪 Sign Out</a>
+        <a href="driver.html" class="driver-link">🚗 BECOME A DRIVER</a>
+        <a href="index.html#" id="paxLogoutLink" onclick="passengerLogout()" style="color:var(--danger);margin-top:16px;border-left-color:transparent">🚪 Sign Out</a>
     </div>
     <div class="referral-card" id="referralCard">
         <h3>🎁 Refer Friends, Earn Rewards</h3>
@@ -1059,27 +1035,24 @@
                 return;
             }
 
-            /* Initialize reCAPTCHA — use 'invisible' for cleaner UX, especially on iOS */
+            /* Initialize invisible reCAPTCHA */
             if (!_paxRecaptchaVerifier) {
                 _paxRecaptchaVerifier = new RecaptchaVerifier(auth, 'paxRecaptcha', {
                     size: 'invisible',
                     callback: () => {},
                     'expired-callback': () => {
-                        /* Reset so next attempt creates fresh verifier */
                         try { _paxRecaptchaVerifier.clear(); } catch(e) {}
                         _paxRecaptchaVerifier = null;
-                        document.getElementById('paxRecaptcha').innerHTML = '';
                     }
                 });
                 await _paxRecaptchaVerifier.render();
             }
 
-            /* Send SMS with a 20-second timeout — prevents stuck "Sending code..." on iOS */
-            const smsPromise = signInWithPhoneNumber(auth, phone, _paxRecaptchaVerifier);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SMS timed out. Your carrier may be blocking verification messages. Try again or use a different number.')), 20000)
-            );
-            _paxConfirmResult = await Promise.race([smsPromise, timeoutPromise]);
+            /* Send SMS */
+            /* 20-second timeout so SMS send never hangs silently in WKWebView/TWA */
+            const _smsPromise = signInWithPhoneNumber(auth, phone, _paxRecaptchaVerifier);
+            const _smsTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('SMS timeout — try again')), 20000));
+            _paxConfirmResult = await Promise.race([_smsPromise, _smsTimeout]);
 
             /* Show step 2 */
             document.getElementById('paxStep1').style.display = 'none';
@@ -1090,16 +1063,13 @@
         } catch (e) {
             console.error('SMS send failed:', e);
             btn.disabled = false; btn.textContent = 'SEND CODE 📱';
-            /* Reset reCAPTCHA so retry works */
-            if (_paxRecaptchaVerifier) { try { _paxRecaptchaVerifier.clear(); } catch(ex) {} _paxRecaptchaVerifier = null; }
-            document.getElementById('paxRecaptcha').innerHTML = '';
             /* Graceful fallback: show step 2 with fallback option visible AND show real error */
             document.getElementById('paxStep1').style.display = 'none';
             document.getElementById('paxStep2').style.display = 'block';
             document.getElementById('paxStep2Phone').textContent = phone;
             const fb = document.getElementById('paxSmsFallback');
             fb.style.display = 'block';
-            fb.innerHTML = 'SMS error: <span style="color:#ff5252">' + (e.code || '') + ' ' + (e.message || 'unknown').substring(0,120) + '</span><br>— <a href="#" onclick="paxSkipSms();return false" style="color:var(--primary);font-weight:700">Continue without code</a>';
+            fb.innerHTML = 'SMS error: <span style="color:#ff5252">' + (e.code || '') + ' ' + (e.message || 'unknown').substring(0,120) + '</span><br>— <a href="index.html#" onclick="paxSkipSms();return false" style="color:var(--primary);font-weight:700">Continue without code</a>';
             showToast('SMS unavailable — see error details', 'error');
         }
     };
@@ -1431,7 +1401,7 @@
                     {enableHighAccuracy:false,timeout:10000,maximumAge:30000}
                 );
             },
-            {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+            {enableHighAccuracy:false,timeout:15000,maximumAge:0}
         );
     };
 
@@ -1950,7 +1920,7 @@
     /* Voice input for destination */
     window.voiceInputDest = () => {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { showToast('Voice input is not available in this app. Type your destination instead.', 'info'); return; }
+        if (!SR) { showToast('Voice input not supported on this browser', 'error'); return; }
         const r = new SR();
         r.continuous = false; r.interimResults = false; r.lang = ({es:'es-ES',fr:'fr-FR',pt:'pt-BR',de:'de-DE',zh:'zh-CN',ja:'ja-JP',ar:'ar-SA',ko:'ko-KR',th:'th-TH',it:'it-IT',nl:'nl-NL',tr:'tr-TR',id:'id-ID',vi:'vi-VN',ru:'ru-RU',ms:'ms-MY'}[window._swiftLang?window._swiftLang():'en']||'en-US');
         showToast('Listening... say your destination', 'info');
@@ -1960,7 +1930,7 @@
             document.getElementById('rideDest').dispatchEvent(new Event('input'));
             showToast('Destination: ' + text, 'success');
         };
-        r.onerror = (e) => { if (e.error !== 'no-speech') showToast('Could not hear you. Try again.', 'error'); };
+        r.onerror = (e) => { if (window._swiftMicPoisonPill) window._swiftMicPoisonPill(e.error); if (e.error !== 'no-speech') showToast('Could not hear you. Try again.', 'error'); };
         try { r.start(); } catch(e) { showToast('Microphone access denied', 'error'); }
     };
 
@@ -2016,6 +1986,14 @@
     };
 
     function paxVoiceCommand() {
+        /* iOS WKWebView / Capacitor: Web Speech API is defined but non-functional.
+           Bail early with a clear message so users aren't confused by "Could not hear you". */
+        var _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !window.MSStream;
+        var _isIOSNative = (window.navigator.standalone === true) || /Median/i.test(navigator.userAgent || '');
+        if (_isIOS || _isIOSNative) {
+            showToast('Voice command is not available on this device — please type instead', 'info');
+            return;
+        }
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) { showToast('Voice not supported', 'error'); return; }
         const r = new SR();
@@ -2032,6 +2010,7 @@
             if (!gotResult) showToast('No voice detected. Tap 🎤 to try again.', 'info');
         };
         r.onerror = (e) => {
+            if (window._swiftMicPoisonPill) window._swiftMicPoisonPill(e.error);
             if (e.error === 'no-speech') showToast('No voice detected. Tap 🎤 to try again.', 'info');
             else if (e.error !== 'aborted') showToast('Could not hear you. Tap 🎤 again.', 'error');
         };
@@ -2091,7 +2070,7 @@
                         if (st === 'OK' && r[0]) document.getElementById('ridePickup').value = r[0].formatted_address;
                         resolve();
                     });
-                }, () => resolve(), {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+                }, () => resolve(), {enableHighAccuracy: false, timeout: 10000, maximumAge: 0});
             });
         }
 
@@ -2246,7 +2225,7 @@
         const r = new SR(); r.continuous = false; r.interimResults = false; r.lang = ({es:'es-ES',fr:'fr-FR',pt:'pt-BR',de:'de-DE',zh:'zh-CN',ja:'ja-JP',ar:'ar-SA',ko:'ko-KR',th:'th-TH',it:'it-IT',nl:'nl-NL',tr:'tr-TR',id:'id-ID',vi:'vi-VN',ru:'ru-RU',ms:'ms-MY'}[window._swiftLang?window._swiftLang():'en']||'en-US');
         showToast('Listening... speak your message', 'info');
         r.onresult = (e) => { document.getElementById('chatInput').value = e.results[0][0].transcript; showToast('Tap send to deliver', 'success'); };
-        r.onerror = () => showToast('Could not hear you', 'error');
+        r.onerror = (e) => { if (window._swiftMicPoisonPill && e) window._swiftMicPoisonPill(e.error); showToast('Could not hear you', 'error'); };
         try { r.start(); } catch(e) {}
     };
 
@@ -2639,54 +2618,77 @@
         setupAutocomplete();
     };
 
-    /* GPS — shows location IMMEDIATELY, refines in background */
+    /* GPS — single serialized attempt, retries on PERMISSION_DENIED, toast only after retries exhaust */
     function autoLocate(){
         if(!navigator.geolocation){return;}
 
-        var applied=false, bestAcc=9999;
+        var applied=false, bestAcc=9999, retries=0, MAX_RETRIES=5;
         var btn=document.getElementById('gpsBtn');
+        var watchStarted=false;
 
         function handlePosition(pos){
             var acc=pos.coords.accuracy||9999;
             var lat=pos.coords.latitude, lng=pos.coords.longitude;
             userLoc={lat:lat,lng:lng};
-            
-            /* Always update map marker */
             if(map){map.setCenter(userLoc);updateUserMarker();}
-            
-            /* First fix — show immediately regardless of accuracy */
             if(!applied){
                 applied=true;
                 pickupLoc={lat:lat,lng:lng};
                 if(map)map.setZoom(acc<=200?17:14);
                 applyLocation(lat,lng);
             }
-            
-            /* Better fix arrived — update pickup address */
             if(acc<bestAcc){
                 bestAcc=acc;
                 pickupLoc={lat:lat,lng:lng};
                 if(acc<=200 && map)map.setZoom(17);
-                /* Re-geocode with better coords */
                 applyLocation(lat,lng);
+            }
+            /* Start refiner once we have a fix */
+            if(!watchStarted){
+                watchStarted=true;
+                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:30000,maximumAge:0});
             }
         }
 
-        /* Fire getCurrentPosition to trigger Android permission dialog */
-        navigator.geolocation.getCurrentPosition(handlePosition,function(err){
-            if(err.code===1){
-                showToast('Location required: Settings → Apps → SwiftDeal → Permissions → Location → Allow','info');
-                if(btn){btn.innerHTML='<span>📍</span> Use Current Location';}
-            }
-        },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+        function tryOnce(){
+            navigator.geolocation.getCurrentPosition(handlePosition, function(err){
+                if(false){
+                    /* PERMISSION_DENIED — Android/Chrome TWA can report this even when
+                       the OS permission is granted, while internal permission state syncs.
+                       Retry silently before surfacing any toast. */
+                    if(retries < MAX_RETRIES){
+                        retries++;
+                        setTimeout(tryOnce, 2000);
+                    } else {
+                        showToast('Location required: Settings → Apps → SwiftDeal → Permissions → Location → Allow','info');
+                        if(btn){btn.innerHTML='<span>📍</span> Use Current Location';}
+                    }
+                } else if(err.code===3){
+                    /* TIMEOUT — retry with longer window */
+                    if(retries < MAX_RETRIES){
+                        retries++;
+                        setTimeout(tryOnce, 1500);
+                    }
+                }
+                /* code 2 POSITION_UNAVAILABLE — just let watchPosition keep trying */
+            }, {enableHighAccuracy:false, timeout:20000, maximumAge:0});
+        }
 
-        /* watchPosition keeps refining — cell tower → WiFi → GPS satellite */
-        navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:true,timeout:30000,maximumAge:0});
+        tryOnce();
 
-        /* Also try low accuracy as fast backup */
-        navigator.geolocation.getCurrentPosition(function(pos){
-            if(!applied) handlePosition(pos);
-        },function(){},{enableHighAccuracy:false,timeout:5000,maximumAge:30000});
+        /* Permissions API: if user grants permission mid-session, retry immediately */
+        if(navigator.permissions && navigator.permissions.query){
+            try {
+                navigator.permissions.query({name:'geolocation'}).then(function(st){
+                    st.onchange = function(){
+                        if(st.state === 'granted' && !applied){
+                            retries = 0;
+                            tryOnce();
+                        }
+                    };
+                }).catch(function(){});
+            } catch(e){}
+        }
     }
 
     /* Apply GPS location — fills pickup with STREET ADDRESS (not Plus Code) */
@@ -2963,18 +2965,51 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
         <span style="font-size:13px;font-weight:800;background:linear-gradient(90deg,#69f0ae,#f9d71c,#69f0ae);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmerText 2s linear infinite;white-space:nowrap">DRIVE & EARN</span>
     </div>
 </div>
-<div id="micFab" style="position:fixed;bottom:20px;right:16px;z-index:900">
-    <button onclick="paxVoiceCommand()" style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#ffeb3b);border:none;box-shadow:0 4px 20px rgba(249,215,28,.4);cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center;animation:fabFloat 3s ease-in-out infinite">🎤</button>
-</div>
 <script>
-/* ★ Hide mic button if Speech Recognition API is unavailable (iOS WKWebView doesn't support it) */
+/* Hide mic FAB when Web Speech isn't usable.
+   Detection layers:
+   1. API missing  → hide
+   2. iOS Safari OR any iOS wrapper (Median, Capacitor, standalone) → hide
+   3. Self-heal — if the user has seen a recognition error before, remember it and hide forever */
 (function(){
-    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
-        var fab = document.getElementById('micFab');
-        if (fab) fab.style.display = 'none';
+    var ua = navigator.userAgent || '';
+    var hasSR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    var isMedianWrap = /median/i.test(ua);
+    var isCapacitor = !!(window.Capacitor || window.cordova);
+    var isIOSNative = (window.navigator.standalone === true) || isMedianWrap || isCapacitor;
+    var permaDisabled = false;
+    try { permaDisabled = localStorage.getItem('swiftMicBroken') === '1'; } catch(e){}
+
+    var shouldHide = !hasSR || permaDisabled || isIOS || isIOSNative;
+
+    if (shouldHide) {
+        var tryHide = function(){
+            var f = document.getElementById('micFab');
+            if (f) { f.style.display = 'none'; return true; }
+            return false;
+        };
+        if (document.readyState !== 'loading') tryHide();
+        else document.addEventListener('DOMContentLoaded', tryHide);
+        setTimeout(tryHide, 500);
+        setTimeout(tryHide, 1500);
+    } else {
+        /* Self-heal: if speech recognition fails with an unrecoverable error,
+           poison-pill it so the mic FAB never reappears on this device. */
+        window._swiftMicPoisonPill = function(err){
+            if (err === 'not-allowed' || err === 'service-not-allowed' ||
+                err === 'audio-capture' || err === 'bad-grammar' || err === 'network') {
+                try { localStorage.setItem('swiftMicBroken','1'); } catch(e){}
+                var f = document.getElementById('micFab');
+                if (f) f.style.display = 'none';
+            }
+        };
     }
 })();
 </script>
+<div id="micFab" style="position:fixed;bottom:20px;right:16px;z-index:900">
+    <button onclick="paxVoiceCommand()" style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#ffeb3b);border:none;box-shadow:0 4px 20px rgba(249,215,28,.4);cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center;animation:fabFloat 3s ease-in-out infinite">🎤</button>
+</div>
 <style>
 @keyframes fabFloat{0%,100%{transform:translateY(0);box-shadow:0 4px 20px rgba(0,200,83,.3)}50%{transform:translateY(-5px);box-shadow:0 8px 30px rgba(0,200,83,.5)}}
 @keyframes orbitSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}

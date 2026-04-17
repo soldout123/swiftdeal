@@ -8,6 +8,35 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:626252184385:android:c5ffa42eeb8128fcf43fc0",
+        "android_client_info": {
+          "package_name": "co.median.android.nmmobkd"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "626252184385-qpbpmnha5deftl6i627ouekrv6d8c4pi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbiSK1z3Kr5TM34lt2XYnPSY5b1xIBa5c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "626252184385-qpbpmnha5deftl6i627ouekrv6d8c4pi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:626252184385:android:bfa34b0056197eddf43fc0",
         "android_client_info": {
           "package_name": "com.apps.swiftdeal"
