@@ -1048,6 +1048,33 @@
 </head>
 <body>
 
+
+<script>
+/* When the permission gate is granted on the welcome page, mark and stay.
+   The user can then tap "Open passenger app" / "Drive & earn" themselves —
+   we do NOT auto-redirect because Jermane wants the welcome page to be
+   seen fully first. We just mark that they've been here. */
+(function(){
+    window._swiftOnGrant = function(){
+        try { localStorage.setItem('swiftSeenWelcome','1'); } catch(e){}
+        document.cookie = "swiftSeenWelcome=1; max-age=31536000; path=/";
+    };
+    /* Also mark once the user clicks any CTA to enter the app. */
+    document.addEventListener('click', function(e){
+        var t = e.target;
+        while (t && t !== document){
+            if (t.classList && (t.classList.contains('cta') || t.classList.contains('qr-action'))){
+                try { localStorage.setItem('swiftSeenWelcome','1'); } catch(e){}
+                document.cookie = "swiftSeenWelcome=1; max-age=31536000; path=/";
+                break;
+            }
+            t = t.parentNode;
+        }
+    }, true);
+})();
+</script>
+
+
     <!-- ───── MARQUEE TAPE ───── -->
     <div class="tape notranslate">
         <div class="tape-track">

@@ -2,24 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- WELCOME PAGE REDIRECT — first-time visitors only (skipped inside native app) -->
+        <!-- WELCOME PAGE REDIRECT — first-time visitors only, including native app first-run -->
     <script>
     (function(){
         try {
-            var isIOSNativeApp = (window.navigator.standalone === true);
-            var isStandaloneDisplay = false;
-            try { isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches; } catch(e){}
-            var isAndroidTWA = document.referrer.indexOf('android-app://') === 0;
-            var isNativeApp = isIOSNativeApp || isStandaloneDisplay || isAndroidTWA;
             var savedPhone = localStorage.getItem('swiftPaxPhone') || localStorage.getItem('swiftSeenWelcome');
             var cookieSeen = document.cookie.indexOf('swiftSeenWelcome=1') !== -1;
             var fromWelcome = document.referrer.indexOf('/welcome.html') !== -1;
             var skipParam = window.location.search.indexOf('nowelcome') !== -1;
-            if (!isNativeApp && !savedPhone && !cookieSeen && !fromWelcome && !skipParam) {
+            if (!savedPhone && !cookieSeen && !fromWelcome && !skipParam) {
                 window.location.replace('/welcome.html');
-            } else if (isNativeApp) {
-                try { localStorage.setItem('swiftSeenWelcome','1'); } catch(e){}
-                document.cookie = "swiftSeenWelcome=1; max-age=31536000; path=/";
             }
         } catch(e) {}
     })();
@@ -43,11 +35,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SwiftDeal">
-    <link rel="apple-touch-icon" href="icon-192x192.png.1">
-    <link rel="apple-touch-icon" sizes="152x152" href="icon-152x152.png.1">
-    <link rel="apple-touch-icon" sizes="144x144" href="icon-144x144.png.1">
-    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png.1">
-    <link rel="apple-touch-icon" sizes="512x512" href="icon-512x512.png.1">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512x512.png">
     <meta name="description" content="SwiftDeal - The world's first AI-powered ride-hailing app. Book rides, send packages, and rent vehicles with cash payments worldwide.">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -401,32 +393,7 @@
                 if(window.caches){caches.keys().then(function(names){names.forEach(function(n){caches.delete(n);});});}
             }
 
-            setTimeout(function(){
-                /* 1. LOCATION — silently trigger Android permission dialog, no toast here */
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        function(pos){ console.log('Location granted'); },
-                        function(err){ console.log('Upfront location probe err:', err.code); },
-                        {enableHighAccuracy:false, timeout:15000}
-                    );
-                }
-                
-                /* 2. NOTIFICATIONS */
-                setTimeout(function(){
-                    if ('Notification' in window && Notification.permission !== 'granted') {
-                        Notification.requestPermission();
-                    }
-                }, 1000);
-
-                /* 3. MICROPHONE */
-                setTimeout(function(){
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-                            stream.getTracks().forEach(function(t){t.stop();});
-                        }).catch(function(){});
-                    }
-                }, 2000);
-            }, 500);
+            /* Permission gate + mic/notifications are handled by the persistent overlay below */
         });
     })();
     </script>
@@ -465,6 +432,7 @@
     </script>
 </head>
 <body>
+
 <script>window._swiftVapidKey="BPccwJzzFHAAk9FT7bkvddhdnht9kh20ia_kgK5eJQJT67nGYUN0jIOaHRffDO81nhAYtHyrP3xXwG8jnSrbrOY";</script>
 
 
@@ -646,6 +614,23 @@
 <div class="panel-overlay" id="settingsOverlay">
     <div class="panel-header"><button class="panel-close" onclick="closeSettings()">←</button><h2>⚙️ Settings</h2></div>
     <div class="panel-body">
+        <div class="profile-card">
+            <h3>🔐 App Permissions</h3>
+            <p style="font-size:11px;color:#888;margin-bottom:12px">Tap any toggle to re-request permission. If a permission was permanently blocked, the toggle will guide you to Settings.</p>
+            <div class="setting-item">
+                <div class="setting-info"><h4>📍 Location</h4><p id="permLocStatus">Checking…</p></div>
+                <label class="toggle-mini"><input type="checkbox" id="permLocToggle" onchange="swiftTogglePerm('location',this)"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info"><h4>🔔 Notifications</h4><p id="permNotifStatus">Checking…</p></div>
+                <label class="toggle-mini"><input type="checkbox" id="permNotifToggle" onchange="swiftTogglePerm('notifications',this)"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item">
+                <div class="setting-info"><h4>🎤 Microphone</h4><p id="permMicStatus">Checking…</p></div>
+                <label class="toggle-mini"><input type="checkbox" id="permMicToggle" onchange="swiftTogglePerm('mic',this)"><span class="slider"></span></label>
+            </div>
+            <p style="font-size:10px;color:#666;margin-top:10px;line-height:1.5">If a toggle won't turn on, open <b>phone Settings → Apps → SwiftDeal → Permissions</b> and allow it there.</p>
+        </div>
         <div class="profile-card">
             <h3>🎨 Appearance</h3>
             <p style="font-size:11px;color:#888;margin-bottom:12px">Choose your visual theme</p>
@@ -2690,6 +2675,8 @@
             } catch(e){}
         }
     }
+    /* Expose on window so the permission gate can trigger it */
+    window.autoLocate = autoLocate;
 
     /* Apply GPS location — fills pickup with STREET ADDRESS (not Plus Code) */
     function applyLocation(lat,lng){
@@ -2770,6 +2757,12 @@
 
 
     /* === LISTEN FOR ADMIN PUSH NOTIFICATIONS === */
+    /* Record the moment this browser/app first loaded SwiftDeal. Any admin notification
+       sent BEFORE that moment is legacy and must not be shown — otherwise every new
+       install gets ambushed by whatever was the last-sent notification. */
+    if (!localStorage.getItem('swiftInstallTime')) {
+        localStorage.setItem('swiftInstallTime', String(Date.now()));
+    }
     onValue(ref(db, 'activeNotification'), snap => {
         const n = snap.val();
         if (!n || !n.title) return;
@@ -2777,6 +2770,12 @@
         if (shown === n.id) return; /* Already shown */
         const audience = n.audience || 'all';
         if (audience !== 'all' && audience !== 'passengers') return;
+        /* Skip notifications sent before this user installed */
+        const installTime = parseInt(localStorage.getItem('swiftInstallTime') || '0', 10);
+        const sentAt = n.sentAt || 0;
+        if (sentAt && installTime && sentAt < installTime) { return; }
+        /* Also skip notifications older than 24 hours — prevents resurrecting stale alerts */
+        if (sentAt && (Date.now() - sentAt) > 24 * 60 * 60 * 1000) { return; }
         localStorage.setItem('swiftLastNotif', n.id);
         fireSystemNotification(n.title, n.body, 'admin-push');
         speakAloud(n.title + '. ' + n.body);
@@ -3417,6 +3416,183 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
             bar.parentNode.insertBefore(ov, bar);
         }
     });
+})();
+</script>
+
+
+<script>
+/* Settings > App Permissions — live status + re-request on toggle */
+(function(){
+    function statusText(state){
+        if (state === 'granted') return '✅ Allowed';
+        if (state === 'denied')  return '❌ Blocked — open phone Settings';
+        return '⏳ Not asked yet';
+    }
+    function setToggle(id, on){
+        var t = document.getElementById(id);
+        if (t) t.checked = !!on;
+    }
+    function setStatus(id, text){
+        var p = document.getElementById(id);
+        if (p) p.textContent = text;
+    }
+
+    window.swiftRefreshPermissions = function(){
+        /* Location */
+        if (navigator.permissions && navigator.permissions.query){
+            navigator.permissions.query({name:'geolocation'}).then(function(st){
+                setStatus('permLocStatus', statusText(st.state));
+                setToggle('permLocToggle', st.state === 'granted');
+            }).catch(function(){});
+        }
+        /* Notifications */
+        if ('Notification' in window){
+            var ns = Notification.permission;
+            setStatus('permNotifStatus', statusText(ns === 'default' ? 'prompt' : ns));
+            setToggle('permNotifToggle', ns === 'granted');
+        } else {
+            setStatus('permNotifStatus','Not supported on this device');
+        }
+        /* Microphone */
+        if (navigator.permissions && navigator.permissions.query){
+            try {
+                navigator.permissions.query({name:'microphone'}).then(function(st){
+                    setStatus('permMicStatus', statusText(st.state));
+                    setToggle('permMicToggle', st.state === 'granted');
+                }).catch(function(){
+                    setStatus('permMicStatus','⏳ Tap to request');
+                });
+            } catch(e){
+                setStatus('permMicStatus','⏳ Tap to request');
+            }
+        } else {
+            setStatus('permMicStatus','⏳ Tap to request');
+        }
+    };
+
+    window.swiftTogglePerm = function(kind, el){
+        if (kind === 'location'){
+            if (el.checked){
+                if (typeof window.swiftRecheckPermission === 'function'){
+                    window.swiftRecheckPermission();
+                } else if (navigator.geolocation){
+                    navigator.geolocation.getCurrentPosition(
+                        function(){ setStatus('permLocStatus','✅ Allowed'); setToggle('permLocToggle', true); },
+                        function(err){
+                            el.checked = false;
+                            setStatus('permLocStatus', err.code===1 ? '❌ Blocked — open phone Settings' : '⏳ Not granted');
+                        },
+                        {enableHighAccuracy:true, timeout:30000, maximumAge:0}
+                    );
+                }
+            } else {
+                /* User turned off — browser can't revoke, so guide to Settings */
+                el.checked = true; /* keep it on visually; only OS can turn off */
+                if (typeof showToast === 'function'){
+                    showToast('Location can only be disabled from phone Settings → Apps → SwiftDeal','info');
+                } else {
+                    alert('Location can only be disabled from phone Settings → Apps → SwiftDeal');
+                }
+            }
+        } else if (kind === 'notifications'){
+            if (el.checked){
+                if ('Notification' in window){
+                    Notification.requestPermission().then(function(p){
+                        setStatus('permNotifStatus', statusText(p === 'default' ? 'prompt' : p));
+                        setToggle('permNotifToggle', p === 'granted');
+                    });
+                }
+            } else {
+                el.checked = true;
+                if (typeof showToast === 'function'){
+                    showToast('Notifications can only be disabled from phone Settings → Apps → SwiftDeal','info');
+                }
+            }
+        } else if (kind === 'mic'){
+            if (el.checked){
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+                    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+                        stream.getTracks().forEach(function(t){ t.stop(); });
+                        setStatus('permMicStatus','✅ Allowed');
+                        setToggle('permMicToggle', true);
+                        /* Clear iOS poison-pill so mic FAB can come back if user now allows */
+                        try { localStorage.removeItem('swiftMicBroken'); } catch(e){}
+                        var f = document.getElementById('micFab');
+                        if (f && !(/iPad|iPhone|iPod/.test(navigator.userAgent||''))){
+                            f.style.display = '';
+                        }
+                    }).catch(function(err){
+                        el.checked = false;
+                        setStatus('permMicStatus', err && err.name==='NotAllowedError' ? '❌ Blocked — open phone Settings' : '⏳ Not granted');
+                    });
+                }
+            } else {
+                el.checked = true;
+                if (typeof showToast === 'function'){
+                    showToast('Microphone can only be disabled from phone Settings → Apps → SwiftDeal','info');
+                }
+            }
+        }
+    };
+
+    /* Refresh statuses whenever the Settings panel opens */
+    var origOpenS = window.openSettings;
+    window.openSettings = function(){
+        if (typeof origOpenS === 'function') origOpenS.apply(this, arguments);
+        setTimeout(window.swiftRefreshPermissions, 100);
+    };
+    var origOpenDrvS = window.openDriverSettings;
+    window.openDriverSettings = function(){
+        if (typeof origOpenDrvS === 'function') origOpenDrvS.apply(this, arguments);
+        setTimeout(window.swiftRefreshPermissions, 100);
+    };
+
+    /* Also refresh on first page load after a short delay */
+    setTimeout(function(){ if (window.swiftRefreshPermissions) window.swiftRefreshPermissions(); }, 1500);
+})();
+</script>
+
+
+<script>
+/* iOS voice input via iOS Dictation keyboard key.
+   iOS WKWebView's webkitSpeechRecognition is unreliable. BUT every iOS keyboard
+   has a built-in 🎤 dictation key next to the spacebar that works perfectly.
+   On iOS, instead of hiding the mic button, we repurpose it: it focuses the
+   destination field and shows a coach-mark pointing to the keyboard mic. */
+(function(){
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    if (!isIOS) return;
+
+    /* Un-hide the mic FAB on iOS — we're giving it a new purpose */
+    function showFab(){
+        var f = document.getElementById('micFab');
+        if (f) f.style.display = '';
+    }
+    if (document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', showFab);
+    } else { showFab(); }
+    setTimeout(showFab, 800);
+
+    /* Override the click to use iOS Dictation instead of broken Web Speech */
+    window.paxVoiceCommand = function(){
+        var dest = document.getElementById('rideDest') || document.getElementById('courDest');
+        if (dest){
+            dest.focus();
+            /* Position a subtle tip pointing to the keyboard mic */
+            var tipId = 'iosDictationTip';
+            var existing = document.getElementById(tipId);
+            if (existing) existing.remove();
+            var tip = document.createElement('div');
+            tip.id = tipId;
+            tip.style.cssText = 'position:fixed;bottom:8px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#f9d71c;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.45);z-index:10000;max-width:90%;text-align:center;border:1px solid #333';
+            tip.innerHTML = '🎤 Tap the <b style="color:#fff">mic key</b> on your keyboard to dictate';
+            document.body.appendChild(tip);
+            setTimeout(function(){ if (tip.parentNode) tip.parentNode.removeChild(tip); }, 5000);
+        } else if (typeof showToast === 'function'){
+            showToast('Tap any text field, then the 🎤 key on the iOS keyboard','info');
+        }
+    };
 })();
 </script>
 

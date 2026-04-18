@@ -51,22 +51,6 @@
             </intent-filter>
         </activity>
 
-        <!-- ★ PermissionActivity is now the app's launcher (icon-tap entry point).
-             It shows a persistent screen, asks for location permission, waits for
-             the user's response, then hands off to LauncherActivity. The dialog
-             can't close prematurely because THIS Activity doesn't finish until
-             onRequestPermissionsResult is called. -->
-        <activity android:name=".PermissionActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:label="@string/launcherName"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
         <activity android:name="LauncherActivity"
             android:alwaysRetainTaskState="true"
             android:label="@string/launcherName"
@@ -118,8 +102,10 @@
             <meta-data android:name="android.support.customtabs.trusted.SCREEN_ORIENTATION"
                 android:value="@string/orientation"/>
 
-            <!-- ★ The MAIN/LAUNCHER intent-filter has been moved to PermissionActivity above.
-                 LauncherActivity is now only reached via explicit Intent from PermissionActivity. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>

@@ -379,6 +379,8 @@
             <label style="display:block;font-size:12px;color:#888;margin-bottom:4px">Message</label>
             <textarea id="notifBody" placeholder="Your message here..." style="width:100%;padding:12px;background:#111;color:#fff;border:1px solid #333;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:16px;min-height:100px;resize:vertical"></textarea>
             <button onclick="sendAdminNotification()" style="width:100%;padding:14px;background:var(--primary);color:#000;border:none;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer">🔔 SEND PUSH NOTIFICATION</button>
+            <button onclick="clearActiveNotification()" style="width:100%;padding:12px;background:#1a1a1a;color:#ff5252;border:1.5px solid #ff5252;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;margin-top:10px">🗑️ CLEAR ACTIVE NOTIFICATION</button>
+            <p style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">Clearing removes the currently-active notification so it won't be shown to users who open the app for the first time. It won't unsend already-delivered notifications.</p>
         </div>
 
         <div style="background:var(--card);border:1px solid #333;border-radius:14px;padding:20px">
@@ -1470,6 +1472,15 @@
             }
             /* Auto scroll to compose area */
             document.getElementById('notifTitle').scrollIntoView({behavior:'smooth', block:'center'});
+        };
+
+        window.clearActiveNotification = function() {
+            if (!confirm('Clear the active notification?\n\nThis removes it from the database so new users opening the app for the first time will NOT see it. Already-delivered notifications on existing users\' devices are unaffected.')) return;
+            db.ref('activeNotification').remove().then(function() {
+                alert('✅ Active notification cleared.\n\nNew users will not see any admin notification until you send a new one.');
+            }).catch(function(e) {
+                alert('Failed to clear: ' + e.message);
+            });
         };
 
         window.sendAdminNotification = function() {
