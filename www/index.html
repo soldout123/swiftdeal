@@ -1440,21 +1440,10 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         </div>
     </div>
 
-    <!-- ───── LANGUAGE SELECTOR BAR ───── -->
-    <div class="swift-lang-bar notranslate" id="swiftLangBar">
-        <div class="swift-lang-current" id="swiftLangBtn" onclick="toggleLangDropdown()">
-            <span class="swift-lang-flag" id="swiftLangFlag">🌐</span>
-            <span class="swift-lang-name" id="swiftLangName">English</span>
-            <span class="swift-lang-arrow" id="swiftLangArrow">▾</span>
-        </div>
-        <div class="swift-lang-dropdown" id="swiftLangDropdown">
-            <div class="swift-lang-search-wrap">
-                <input type="text" class="swift-lang-search" id="swiftLangSearch" placeholder="🔍 Search language..." autocomplete="off" autocorrect="off" spellcheck="false">
-            </div>
-            <div class="swift-lang-list" id="swiftLangList"></div>
-        </div>
-    </div>
-    <div id="google_translate_element" style="display:none!important;height:0;overflow:hidden"></div>
+    <!-- LANGUAGE SELECTOR BAR — removed from welcome overlay to avoid duplicate IDs
+         (the main app already has one below). The welcome overlay will inherit translations
+         from the main app's language selector. -->
+    <div id="google_translate_element_welcome" style="display:none!important;height:0;overflow:hidden"></div>
 
     <!-- ───── HERO ───── -->
     <section class="hero">
@@ -3260,8 +3249,35 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
     ═══════════════════════════════════════════════════════════ */
     /* Voice input for destination */
     window.voiceInputDest = () => {
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        var isIOSStandalone = (window.navigator.standalone === true);
+        var destInput = document.getElementById('rideDest');
+
+        /* iOS WKWebView does not support Web Speech API. Redirect users to the built-in
+           iPhone keyboard mic, which works perfectly and doesn't require any permissions
+           beyond what iOS already has. */
+        if (isIOS || isIOSStandalone) {
+            if (destInput) {
+                destInput.focus();
+                /* Delay so keyboard has a moment to appear */
+                setTimeout(function(){
+                    showToast('Tap the 🎤 microphone key on your keyboard to dictate', 'info');
+                }, 400);
+            }
+            return;
+        }
+
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { showToast('Voice input not supported on this browser', 'error'); return; }
+        if (!SR) {
+            /* Android fallback: focus input. Most Android keyboards (Gboard) also have a mic key. */
+            if (destInput) {
+                destInput.focus();
+                setTimeout(function(){
+                    showToast('Tap the 🎤 microphone key on your keyboard', 'info');
+                }, 400);
+            }
+            return;
+        }
         const r = new SR();
         r.continuous = false; r.interimResults = false; r.lang = ({es:'es-ES',fr:'fr-FR',pt:'pt-BR',de:'de-DE',zh:'zh-CN',ja:'ja-JP',ar:'ar-SA',ko:'ko-KR',th:'th-TH',it:'it-IT',nl:'nl-NL',tr:'tr-TR',id:'id-ID',vi:'vi-VN',ru:'ru-RU',ms:'ms-MY'}[window._swiftLang?window._swiftLang():'en']||'en-US');
         showToast('Listening... say your destination', 'info');
@@ -3955,7 +3971,27 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         map=new google.maps.Map(document.getElementById('map'),{center:{lat:tzLoc.lat,lng:tzLoc.lng},zoom:12,mapTypeId:'hybrid',disableDefaultUI:true,zoomControl:false,mapTypeControl:false,streetViewControl:false,fullscreenControl:false,gestureHandling:'greedy'});
         userCountry=tzLoc.c;var p=gp();userCurrency=p.c;document.getElementById('currencyBadge').textContent=p.c;
         if(window._swiftTranslate)window._swiftTranslate(tzLoc.c);
-        autoLocate();
+
+        /* CRITICAL: Defer autoLocate (which triggers the native location popup) until
+           the welcome overlay is dismissed. The popup was closing too fast because it
+           appeared during the map's initial load animation. Now it appears only AFTER
+           the welcome page is fully rendered and stable, OR immediately if the user
+           has already seen the welcome (returning user). */
+        var overlay=document.getElementById('swiftWelcomeOverlay');
+        var welcomeVisible = overlay && overlay.classList.contains('visible');
+        if (welcomeVisible) {
+            /* Poll until overlay is hidden, then fire autoLocate on a stable page */
+            var waitForDismiss = setInterval(function(){
+                var o = document.getElementById('swiftWelcomeOverlay');
+                if (!o || !o.classList.contains('visible')) {
+                    clearInterval(waitForDismiss);
+                    /* Small delay so any fade-out animation settles first */
+                    setTimeout(function(){ autoLocate(); }, 400);
+                }
+            }, 300);
+        } else {
+            autoLocate();
+        }
         setupAutocomplete();
     };
 
@@ -4423,10 +4459,18 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
         /* Check if already translated to this language */
         var current = document.cookie.match(/googtrans=\/en\/([a-z]+)/);
         if (current && current[1] === lang) return;
-        /* Set cookie and reload to trigger translation */
+
+        /* Set cookie for future loads */
         document.cookie = "googtrans=/en/" + lang + "; path=/";
         document.cookie = "googtrans=/en/" + lang + "; domain=" + window.location.hostname + "; path=/";
-        window.location.reload();
+
+        /* CRITICAL: Do NOT call window.location.reload() here. A reload during
+           app startup destroys Chrome's WebView state and tears down any native
+           permission popup that may be on screen. Instead, if the user actively
+           picks a different language through the selector, THAT function
+           (_swiftSetLang) handles the reload. For country-based auto-detection,
+           we only set the cookie — next time they open the app, translation
+           will apply automatically. */
     };
     window._swiftLang = function(){ return (navigator.language||'en').substring(0,2); };
     window._swiftDict = function(){ return {}; };
@@ -4951,6 +4995,7 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
     };
 })();
 </script>
+
 
 </body>
 </html>
