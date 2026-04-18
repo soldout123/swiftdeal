@@ -9,10 +9,9 @@
       "namespace": "android_app",
       "package_name": "com.swiftdeal.app",
       "sha256_cert_fingerprints": [
-        "6F:FD:63:CC:43:F2:06:1F:CD:98:2A:F1:EE:A4:FB:66:3F:E8:A9:B8:FF:A7:9A:CD:78:A2:8D:FB:61:85:4A:CA", 
-        "9D:9F:CA:33:AB:34:7E:76:80:3D:9D:91:4E:7A:84:4B:61:2F:52:7A:20:E6:4A:27:B4:D1:C5:3B:D8:69:D2:98"
+        "6F:FD:63:CC:43:F2:06:1F:CD:98:2A:F1:EE:A4:FB:66:3F:E8:A9:B8:FF:A7:9A:CD:78:A2:8D:FB:61:85:4A:CA",
+        "E1:AF:FC:FC:4E:D0:B4:23:80:F6:31:A1:61:99:5A:C1:5A:27:14:48:C8:F8:3C:40:5F:0C:3C:DD:D8:FC:BF:C6"
       ]
     }
   }
 ]
-
