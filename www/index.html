@@ -4837,6 +4837,21 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
         if (p) p.textContent = text;
     }
 
+    /* Open the OS settings page for this app so user can grant permissions
+       at the Android OS level. Works inside a TWA via an intent: URL. */
+    function swiftOpenAppSettings(){
+        try {
+            window.location.href = 'intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;'
+                + 'package=com.swiftdeal.app;end';
+        } catch(e) {
+            if (typeof showToast === 'function') {
+                showToast('Open phone Settings → Apps → SwiftDeal → Permissions to grant access','info');
+            } else {
+                alert('Open phone Settings → Apps → SwiftDeal → Permissions to grant access');
+            }
+        }
+    }
+
     window.swiftRefreshPermissions = function(){
         /* Location */
         if (navigator.permissions && navigator.permissions.query){
@@ -4873,17 +4888,41 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
     window.swiftTogglePerm = function(kind, el){
         if (kind === 'location'){
             if (el.checked){
-                if (typeof window.swiftRecheckPermission === 'function'){
-                    window.swiftRecheckPermission();
-                } else if (navigator.geolocation){
-                    navigator.geolocation.getCurrentPosition(
-                        function(){ setStatus('permLocStatus','✅ Allowed'); setToggle('permLocToggle', true); },
-                        function(err){
-                            el.checked = false;
-                            setStatus('permLocStatus', err.code===1 ? '❌ Blocked — open phone Settings' : '⏳ Not granted');
-                        },
-                        {enableHighAccuracy:true, timeout:30000, maximumAge:0}
-                    );
+                /* In a TWA, JavaScript getCurrentPosition() uses Chrome's location
+                   delegation which requires the APK to hold ACCESS_FINE_LOCATION.
+                   If the APK doesn't have it, we CAN'T grant it from web JS —
+                   only the Android OS can via its own permission flow. So we
+                   deep-link the user to phone Settings where they can grant
+                   the permission at the OS level. */
+                try {
+                    /* First try: navigator.geolocation — if permission is already
+                       granted at the OS level but the in-app toggle just needs to
+                       reflect reality. */
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            function(pos){
+                                setStatus('permLocStatus','✅ Allowed');
+                                setToggle('permLocToggle', true);
+                                /* If map exists and has no location yet, retrigger autoLocate */
+                                if (typeof window.autoLocate === 'function' && !window.userLoc) {
+                                    try { window.autoLocate(); } catch(e){}
+                                }
+                            },
+                            function(err){
+                                /* Permission not granted at OS level — guide to Settings */
+                                el.checked = false;
+                                setStatus('permLocStatus', '❌ Blocked — opening Settings…');
+                                swiftOpenAppSettings();
+                            },
+                            {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+                        );
+                    } else {
+                        el.checked = false;
+                        swiftOpenAppSettings();
+                    }
+                } catch(e) {
+                    el.checked = false;
+                    swiftOpenAppSettings();
                 }
             } else {
                 /* User turned off — browser can't revoke, so guide to Settings */
