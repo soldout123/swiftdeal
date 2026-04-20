@@ -2178,7 +2178,7 @@
             }, 1500);
         } else if (isIOS) {
             /* Replace APP_ID with actual App Store ID when published */
-            window.open('https://apps.apple.com/app/swiftdeal/idD3MK755C56?action=write-review', '_blank');
+            window.open('https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731?action=write-review', '_blank');
         } else {
             window.open('https://play.google.com/store/apps/details?id=com.swiftdeal.app', '_blank');
         }
@@ -2204,7 +2204,7 @@
     }
     window.doShareApp = function() {
         document.getElementById('shareAppModal').style.display = 'none';
-        var shareText = 'Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/app/swiftdeal/idD3MK755C56';
+        var shareText = 'Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731';
         var shareUrl = 'https://play.google.com/store/apps/details?id=com.swiftdeal.app';
         if (navigator.share) {
             navigator.share({ title: 'SwiftDeal', text: shareText }).catch(function(){});
@@ -3120,7 +3120,7 @@
     };
 
     window.shareApp = async () => {
-        const txt = 'Drive with SwiftDeal and earn on your own terms! 🚗💰\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/app/swiftdeal/idD3MK755C56';
+        const txt = 'Drive with SwiftDeal and earn on your own terms! 🚗💰\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731';
         if (navigator.share) { try { await navigator.share({title:'SwiftDeal Driver',text:txt}); } catch {} }
         else { navigator.clipboard?.writeText(txt); showRequestToast('Link copied!'); }
     };

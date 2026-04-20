@@ -1563,9 +1563,13 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                 <div class="qr-box">
                     <canvas id="paxQr"></canvas>
                 </div>
-                <div class="qr-url">swiftdeal-3cee9.web.app</div>
-                <a href="https://swiftdeal-3cee9.web.app/index.html" class="qr-action">
-                    Open Passenger App
+                <div class="qr-url">Scan to download · Android & iOS</div>
+                <a href="https://play.google.com/store/apps/details?id=com.swiftdeal.app" class="qr-action">
+                    Get on Google Play
+                    <span class="arrow">→</span>
+                </a>
+                <a href="https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731" class="qr-action" style="margin-top:8px">
+                    Get on App Store
                     <span class="arrow">→</span>
                 </a>
             </div>
@@ -1578,9 +1582,13 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                 <div class="qr-box">
                     <canvas id="drvQr"></canvas>
                 </div>
-                <div class="qr-url">swiftdeal-3cee9.web.app/driver.html</div>
-                <a href="https://swiftdeal-3cee9.web.app/driver.html" class="qr-action">
-                    Open Driver App
+                <div class="qr-url">Scan to download · Android & iOS</div>
+                <a href="https://play.google.com/store/apps/details?id=com.swiftdeal.app" class="qr-action">
+                    Get on Google Play
+                    <span class="arrow">→</span>
+                </a>
+                <a href="https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731" class="qr-action" style="margin-top:8px">
+                    Get on App Store
                     <span class="arrow">→</span>
                 </a>
             </div>
@@ -1732,17 +1740,19 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         o.classList.add('visible');
         document.body.classList.add('swift-welcome-lock');
 
-        /* Generate QR codes once — lazily */
+        /* Generate QR codes once — lazily. QR codes now link to the Google Play
+           Store listing so users can install the native app. iPhone users can
+           tap the "Get on App Store" button below. */
         try {
             if (typeof QRious !== 'undefined' && !o.dataset.qrDone){
                 var paxEl = document.getElementById('paxQr');
                 var drvEl = document.getElementById('drvQr');
                 if (paxEl) new QRious({
-                    element: paxEl, value: 'https://swiftdeal-3cee9.web.app/index.html',
+                    element: paxEl, value: 'https://play.google.com/store/apps/details?id=com.swiftdeal.app',
                     size: 220, background: '#f5f0e6', foreground: '#050505', level: 'H', padding: 0
                 });
                 if (drvEl) new QRious({
-                    element: drvEl, value: 'https://swiftdeal-3cee9.web.app/driver.html',
+                    element: drvEl, value: 'https://play.google.com/store/apps/details?id=com.swiftdeal.app',
                     size: 220, background: '#f5f0e6', foreground: '#050505', level: 'H', padding: 0
                 });
                 o.dataset.qrDone = '1';
@@ -2375,13 +2385,15 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                         _paxRecaptchaVerifier = null;
                     }
                 });
-                await _paxRecaptchaVerifier.render();
+                /* Timeout on render — in TWAs reCAPTCHA can silently hang forever */
+                const _renderPromise = _paxRecaptchaVerifier.render();
+                const _renderTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('reCAPTCHA timeout — SMS unavailable in this app version')), 10000));
+                await Promise.race([_renderPromise, _renderTimeout]);
             }
 
-            /* Send SMS */
-            /* 20-second timeout so SMS send never hangs silently in WKWebView/TWA */
+            /* Send SMS — 15 second timeout so user doesn't wait 2 minutes on failure */
             const _smsPromise = signInWithPhoneNumber(auth, phone, _paxRecaptchaVerifier);
-            const _smsTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('SMS timeout — try again')), 20000));
+            const _smsTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('SMS timeout — try again')), 15000));
             _paxConfirmResult = await Promise.race([_smsPromise, _smsTimeout]);
 
             /* Show step 2 */
@@ -3085,7 +3097,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         if(!ride||!ride.driverId){showToast('No driver to report for this trip','error');return;}
         currentRideId=rideId;openReportDriver();
     };
-    window.shareApp=async()=>{closeNav();const txt='Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/app/swiftdeal/idD3MK755C56';if(navigator.share){try{await navigator.share({title:'SwiftDeal',text:txt});}catch{}}else{navigator.clipboard?.writeText(txt);showToast('Link copied!','success');}};
+    window.shareApp=async()=>{closeNav();const txt='Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731';if(navigator.share){try{await navigator.share({title:'SwiftDeal',text:txt});}catch{}}else{navigator.clipboard?.writeText(txt);showToast('Link copied!','success');}};
 
     /* ══════════════════════════════════════════════════════════════
        FEATURE 1: POST-RIDE RATING SYSTEM ⭐
@@ -3185,7 +3197,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
             }, 1500);
         } else if (isIOS) {
             /* Replace APP_ID with actual App Store ID when published */
-            window.open('https://apps.apple.com/app/swiftdeal/idD3MK755C56?action=write-review', '_blank');
+            window.open('https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731?action=write-review', '_blank');
         } else {
             window.open('https://play.google.com/store/apps/details?id=com.swiftdeal.app', '_blank');
         }
@@ -3211,7 +3223,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
     }
     window.doShareApp = function() {
         document.getElementById('shareAppModal').style.display = 'none';
-        var shareText = 'Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/app/swiftdeal/idD3MK755C56';
+        var shareText = 'Download SwiftDeal! Book rides, send packages & pay with cash.\n\nAndroid: https://play.google.com/store/apps/details?id=com.swiftdeal.app\n\niPhone: https://apps.apple.com/us/app/swiftdeal-ai-smart-rides/id6761651731';
         var shareUrl = 'https://play.google.com/store/apps/details?id=com.swiftdeal.app';
         if (navigator.share) {
             navigator.share({ title: 'SwiftDeal', text: shareText }).catch(function(){});
@@ -4837,19 +4849,34 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
         if (p) p.textContent = text;
     }
 
-    /* Open the OS settings page for this app so user can grant permissions
-       at the Android OS level. Works inside a TWA via an intent: URL. */
+    /* Guide user to phone Settings to grant permissions.
+       Android Chrome + TWA does NOT allow JavaScript to open ACTION_APPLICATION_DETAILS_SETTINGS
+       via intent: URL — Chrome's security model intercepts it and falls back to Play Store.
+       So instead of trying to open Settings automatically, we show clear manual steps.
+       The user taps once to Settings manually — it's still fast. */
     function swiftOpenAppSettings(){
-        try {
-            window.location.href = 'intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;'
-                + 'package=com.swiftdeal.app;end';
-        } catch(e) {
-            if (typeof showToast === 'function') {
-                showToast('Open phone Settings → Apps → SwiftDeal → Permissions to grant access','info');
-            } else {
-                alert('Open phone Settings → Apps → SwiftDeal → Permissions to grant access');
-            }
-        }
+        /* Show a persistent, clear instruction modal instead of a toast
+           (toasts disappear too fast for users to follow multi-step instructions). */
+        var existing = document.getElementById('swiftPermInstructModal');
+        if (existing) { existing.remove(); }
+
+        var modal = document.createElement('div');
+        modal.id = 'swiftPermInstructModal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+        modal.innerHTML = '<div style="background:#1a1a1a;border:1.5px solid #f9d71c;border-radius:16px;padding:24px;max-width:360px;width:100%;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.5)">'
+            + '<div style="font-size:42px;text-align:center;margin-bottom:10px">📍</div>'
+            + '<h3 style="color:#f9d71c;font-size:18px;margin:0 0 8px;text-align:center;font-weight:800">Enable Location</h3>'
+            + '<p style="color:#ccc;font-size:13px;line-height:1.55;margin:0 0 18px;text-align:center">Your phone is blocking location for SwiftDeal. Grant it in 4 taps:</p>'
+            + '<ol style="color:#eee;font-size:13px;line-height:1.8;margin:0 0 18px;padding-left:24px">'
+            + '<li>Open phone <strong>Settings</strong></li>'
+            + '<li>Tap <strong>Apps</strong> → <strong>SwiftDeal</strong></li>'
+            + '<li>Tap <strong>Permissions</strong> → <strong>Location</strong></li>'
+            + '<li>Select <strong>Allow only while using app</strong></li>'
+            + '</ol>'
+            + '<p style="color:#888;font-size:11px;line-height:1.5;margin:0 0 18px;text-align:center">Then return to SwiftDeal. The map will find your location automatically.</p>'
+            + '<button onclick="document.getElementById(\'swiftPermInstructModal\').remove()" style="width:100%;padding:14px;background:#f9d71c;color:#000;border:none;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">Got it</button>'
+            + '</div>';
+        document.body.appendChild(modal);
     }
 
     window.swiftRefreshPermissions = function(){
@@ -4890,39 +4917,70 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
             if (el.checked){
                 /* In a TWA, JavaScript getCurrentPosition() uses Chrome's location
                    delegation which requires the APK to hold ACCESS_FINE_LOCATION.
-                   If the APK doesn't have it, we CAN'T grant it from web JS —
-                   only the Android OS can via its own permission flow. So we
-                   deep-link the user to phone Settings where they can grant
-                   the permission at the OS level. */
-                try {
-                    /* First try: navigator.geolocation — if permission is already
-                       granted at the OS level but the in-app toggle just needs to
-                       reflect reality. */
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            function(pos){
-                                setStatus('permLocStatus','✅ Allowed');
-                                setToggle('permLocToggle', true);
-                                /* If map exists and has no location yet, retrigger autoLocate */
-                                if (typeof window.autoLocate === 'function' && !window.userLoc) {
-                                    try { window.autoLocate(); } catch(e){}
-                                }
-                            },
-                            function(err){
-                                /* Permission not granted at OS level — guide to Settings */
-                                el.checked = false;
-                                setStatus('permLocStatus', '❌ Blocked — opening Settings…');
-                                swiftOpenAppSettings();
-                            },
-                            {enableHighAccuracy:true, timeout:10000, maximumAge:0}
-                        );
-                    } else {
+                   If the APK doesn't have it, deep-link to phone Settings. */
+                var tryGetPos = function() {
+                    try {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                function(pos){
+                                    setStatus('permLocStatus','✅ Allowed');
+                                    setToggle('permLocToggle', true);
+                                    /* If map exists and has no location yet, retrigger autoLocate */
+                                    try {
+                                        window.userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+                                    } catch(e){}
+                                    if (typeof window.autoLocate === 'function') {
+                                        try { window.autoLocate(); } catch(e){}
+                                    }
+                                    if (typeof showToast === 'function') {
+                                        showToast('Location access confirmed!','success');
+                                    }
+                                },
+                                function(err){
+                                    el.checked = false;
+                                    if (err && err.code === 1) {
+                                        /* PERMISSION_DENIED at OS level — guide to Settings */
+                                        setStatus('permLocStatus', '❌ Blocked — opening Settings…');
+                                        swiftOpenAppSettings();
+                                    } else {
+                                        /* Other error (timeout, unavailable) — just inform */
+                                        setStatus('permLocStatus', '⏳ Unable to get location — try again outside');
+                                        if (typeof showToast === 'function') {
+                                            showToast('Could not get location. Make sure GPS is on.','error');
+                                        }
+                                    }
+                                },
+                                {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
+                            );
+                        } else {
+                            el.checked = false;
+                            swiftOpenAppSettings();
+                        }
+                    } catch(e) {
                         el.checked = false;
                         swiftOpenAppSettings();
                     }
-                } catch(e) {
-                    el.checked = false;
-                    swiftOpenAppSettings();
+                };
+
+                /* Check permission state first if API is available — avoids hitting
+                   a stale "denied" cache that would immediately fail. */
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({name:'geolocation'}).then(function(st){
+                        if (st.state === 'denied') {
+                            /* OS level denied — no point trying getCurrentPosition */
+                            el.checked = false;
+                            setStatus('permLocStatus', '❌ Blocked in phone Settings — opening…');
+                            swiftOpenAppSettings();
+                        } else {
+                            /* 'granted' or 'prompt' — try to get position */
+                            tryGetPos();
+                        }
+                    }).catch(function(){
+                        /* permissions API unsupported — fall back to trying directly */
+                        tryGetPos();
+                    });
+                } else {
+                    tryGetPos();
                 }
             } else {
                 /* User turned off — browser can't revoke, so guide to Settings */
