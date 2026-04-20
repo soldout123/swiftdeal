@@ -2740,10 +2740,10 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                         if(btn){btn.classList.remove('loading');btn.innerHTML='<span>📍</span> Use Current Location';}
                         showToast('Could not get location — check GPS is on','error');
                     },
-                    {enableHighAccuracy:false,timeout:15000,maximumAge:5000}
+                    {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
                 );
             },
-            {enableHighAccuracy:false,timeout:15000,maximumAge:5000}
+            {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
         );
     };
 
@@ -3439,7 +3439,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                         if (st === 'OK' && r[0]) document.getElementById('ridePickup').value = r[0].formatted_address;
                         resolve();
                     });
-                }, () => resolve(), {enableHighAccuracy: false, timeout:15000, maximumAge:5000});
+                }, () => resolve(), {enableHighAccuracy: true, timeout:15000, maximumAge:5000});
             });
         }
 
@@ -4035,7 +4035,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
             /* Start refiner once we have a fix */
             if(!watchStarted){
                 watchStarted=true;
-                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
+                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
             }
         }
 
@@ -4060,7 +4060,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
                     }
                 }
                 /* code 2 POSITION_UNAVAILABLE — just let watchPosition keep trying */
-            }, {enableHighAccuracy:false, timeout:15000, maximumAge:5000});
+            }, {enableHighAccuracy:true, timeout:15000, maximumAge:5000});
         }
 
         tryOnce();

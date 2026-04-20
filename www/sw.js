@@ -1,5 +1,5 @@
-/* SwiftDeal Service Worker v9.0.0.0 — Network-First for HTML */
-const CACHE_NAME = 'swift-v9.2.0.0';
+/* SwiftDeal Service Worker v9.0.150 — Network-First for HTML */
+const CACHE_NAME = 'swift-v9.0.150';
 const STATIC_ASSETS = [
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',
@@ -20,11 +20,13 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-/* Activate — DELETE all old caches (including PWABuilder's old caches) */
+/* Activate — DELETE all old caches */
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(names =>
-      Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)))
+      Promise.all(
+        names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+      )
     ).then(() => self.clients.claim())
   );
 });
@@ -33,9 +35,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  /* NEVER cache HTML files — always go to network */
-  if (event.request.mode === 'navigate' || 
-      url.pathname.endsWith('.html') || 
+  /* NEVER cache HTML files — always go to network first */
+  if (event.request.mode === 'navigate' ||
+      url.pathname.endsWith('.html') ||
       url.pathname === '/' ||
       event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
@@ -44,9 +46,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* NEVER cache JS files — always fresh */
+  /* NEVER cache JS or JSON files — always fresh from network */
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
     return;
   }
 
@@ -58,6 +62,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* Everything else — network with no caching */
+  /* Everything else — direct network request with no caching */
   event.respondWith(fetch(event.request));
 });
