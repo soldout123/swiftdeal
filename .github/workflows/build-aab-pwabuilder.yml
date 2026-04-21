@@ -96,11 +96,10 @@ jobs:
           echo "aab_path=$AAB" >> $GITHUB_OUTPUT
           ls -la "$AAB"
 
-            - name: Sign AAB with jarsigner
+      - name: Sign AAB with jarsigner
         run: |
           cp twa-source/app/build/outputs/bundle/release/app-release.aab SwiftDeal-signed.aab
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore twa-source/keystore-tmp/release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEYSTORE_PASSWORD }}" SwiftDeal-signed.aab "${{ secrets.KEY_ALIAS }}"
-          
 
       - name: Verify Final AAB
         run: |
@@ -121,4 +120,3 @@ jobs:
           name: SwiftDeal-AAB
           path: SwiftDeal-signed.aab
           retention-days: 30
-          
