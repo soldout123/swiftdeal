@@ -6,7 +6,6 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places"></script> <script>navigator.geolocation.watchPosition(function(p){}, function(e){alert("GPS Error: " + e.message);}, {enableHighAccuracy:true, timeout:10000});</script>
     <!-- EARLY LANGUAGE DETECTION — sets cookie before page renders -->
     <script>
     (function(){
@@ -1680,8 +1679,8 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
             </div>
             <div class="footer-col">
                 <h4>Apps</h4>
-                <a href="https://swiftdeal-3cee9.web.app/index.html">Passenger</a>
-                <a href="https://swiftdeal-3cee9.web.app/driver.html">Driver</a>
+                <a href="index.html">Passenger</a>
+                <a href="driver.html">Driver</a>
             </div>
             <div class="footer-col">
                 <h4>Legal</h4>
@@ -2496,7 +2495,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
     }
 
     /* ══════ QR CODE SHARE ══════ */
-    const PAX_URL = 'https://swiftdeal-3cee9.web.app/welcome.html';
+    const PAX_URL = 'welcome.html';
     let _qrDataUrl = null;
     window.showQrCode = () => {
         closeNav();
@@ -2731,11 +2730,11 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         if(!navigator.geolocation){showToast('Location not supported','error');if(btn){btn.classList.remove('loading');btn.innerHTML='<span>📍</span> Use Current Location';}return;}
         
         /* Get fresh position — accept whatever we get */
-        navigator.geolocation.watchPosition(
+        navigator.geolocation.getCurrentPosition(
             function(pos){fillAddress(pos.coords.latitude,pos.coords.longitude);},
             function(err){
                 /* Try low accuracy as fallback */
-                navigator.geolocation.watchPosition(
+                navigator.geolocation.getCurrentPosition(
                     function(pos){fillAddress(pos.coords.latitude,pos.coords.longitude);},
                     function(){
                         if(btn){btn.classList.remove('loading');btn.innerHTML='<span>📍</span> Use Current Location';}
@@ -3432,7 +3431,7 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
         if (!pickupVal && navigator.geolocation) {
             /* Only get GPS if pickup is empty */
             await new Promise(resolve => {
-                navigator.geolocation.watchPosition(pos => {
+                navigator.geolocation.getCurrentPosition(pos => {
                     userLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
                     pickupLoc = {...userLoc};
                     const gc = new google.maps.Geocoder();
@@ -4036,12 +4035,12 @@ body.swift-welcome-lock { overflow: hidden !important; height: 100vh !important;
             /* Start refiner once we have a fix */
             if(!watchStarted){
                 watchStarted=true;
-                navigator.geolocation.watchPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
+                navigator.geolocation.getCurrentPosition(handlePosition,function(){},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
             }
         }
 
         function tryOnce(){
-            navigator.geolocation.watchPosition(handlePosition, function(err){
+            navigator.geolocation.getCurrentPosition(handlePosition, function(err){
                 if(false){
                     /* PERMISSION_DENIED — Android/Chrome TWA can report this even when
                        the OS permission is granted, while internal permission state syncs.
@@ -4356,7 +4355,7 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
 
 <!-- FLOATING ACTION BUTTONS -->
 <div id="fabContainer" style="position:fixed;bottom:20px;left:16px;z-index:900">
-    <div id="driveEarnFab" onclick="window.location.href='https://swiftdeal-3cee9.web.app/driver.html'" style="position:relative;cursor:pointer;background:linear-gradient(135deg,#1b5e20,#2e7d32);padding:12px 22px;border-radius:30px;box-shadow:0 4px 24px rgba(0,200,83,.4);animation:fabFloat 3s ease-in-out infinite;overflow:visible">
+    <div id="driveEarnFab" onclick="window.location.href='driver.html'" style="position:relative;cursor:pointer;background:linear-gradient(135deg,#1b5e20,#2e7d32);padding:12px 22px;border-radius:30px;box-shadow:0 4px 24px rgba(0,200,83,.4);animation:fabFloat 3s ease-in-out infinite;overflow:visible">
         <!-- Orbiting car -->
         <div style="position:absolute;width:100%;height:100%;top:0;left:0;animation:orbitSpin 3s linear infinite;pointer-events:none">
             <span style="position:absolute;top:-14px;left:50%;font-size:18px;transform:translateX(-50%)">🚗</span>
@@ -4922,7 +4921,7 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
                 var tryGetPos = function() {
                     try {
                         if (navigator.geolocation) {
-                            navigator.geolocation.watchPosition(
+                            navigator.geolocation.getCurrentPosition(
                                 function(pos){
                                     setStatus('permLocStatus','✅ Allowed');
                                     setToggle('permLocToggle', true);

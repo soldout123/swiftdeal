@@ -1,5 +1,5 @@
 /* SwiftDeal Service Worker v9.0.150 — Network-First for HTML */
-const CACHE_NAME = 'swift-v9.0.150';
+const CACHE_NAME = 'swift-v9.0.156';
 const STATIC_ASSETS = [
   '/icons/icon-72x72.png',
   '/icons/icon-96x96.png',

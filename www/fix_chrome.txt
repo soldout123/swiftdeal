@@ -1,0 +1,2 @@
+sed -i "s|window.location.replace('https://swiftdeal-3cee9.web.app/welcome.html')|window.location.replace('welcome.html')|g" www/*.html
+sed -i "s|window.location.href='https://swiftdeal-3cee9.web.app/driver.html'|window.location.href='driver.html'|g" www/*.html

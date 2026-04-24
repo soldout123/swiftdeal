@@ -11,7 +11,7 @@
             var fromWelcome = document.referrer.indexOf('/welcome.html') !== -1;
             var skipParam = window.location.search.indexOf('nowelcome') !== -1;
             if (!savedPhone && !cookieSeen && !fromWelcome && !skipParam) {
-                window.location.replace('https://swiftdeal-3cee9.web.app/welcome.html');
+                window.location.replace('welcome.html');
             }
         } catch(e) {}
     })();
@@ -23,7 +23,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places"></script>
-    <script>navigator.geolocation.watchPosition(function(p){}, function(e){alert("GPS Error: " + e.message);}, {enableHighAccuracy:true, timeout:10000});</script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-e5WMc9NRfxdN8qYgXkuV0ZKw2EZymWI&libraries=places"></script>
     <!-- EARLY LANGUAGE DETECTION — sets cookie before page renders -->
     <script>
@@ -1372,7 +1371,7 @@
     }
 
     /* ══════ QR CODE SHARE (DRIVER) ══════ */
-    const DRV_URL = 'https://swiftdeal-3cee9.web.app/welcome.html';
+    const DRV_URL = 'welcome.html';
     let _drvQrDataUrl = null;
     window.showDrvQr = () => {
         closeNav();
@@ -1541,9 +1540,9 @@
             }
         }
         if(!navigator.geolocation){useTimezone();return;}
-        navigator.geolocation.watchPosition(gpsSuccess,()=>{
+        navigator.geolocation.getCurrentPosition(gpsSuccess,()=>{
             /* Retry low accuracy */
-            navigator.geolocation.watchPosition(gpsSuccess,()=>{
+            navigator.geolocation.getCurrentPosition(gpsSuccess,()=>{
                 /* IP fallback for country */
                 fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
                     if(d.latitude&&d.longitude)geocodeCountry({lat:d.latitude,lng:d.longitude});
@@ -1612,15 +1611,15 @@
                             marker.setPosition(p);
                         }
                     }
-                    navigator.geolocation.watchPosition(showDriverPos,()=>{
-                        navigator.geolocation.watchPosition(showDriverPos,()=>{
+                    navigator.geolocation.getCurrentPosition(showDriverPos,()=>{
+                        navigator.geolocation.getCurrentPosition(showDriverPos,()=>{
                             fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
                                 if(d.latitude&&d.longitude){map.setCenter({lat:d.latitude,lng:d.longitude});map.setZoom(13);}
                             }).catch(()=>{});
                         },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
                     },{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
 
-                    navigator.geolocation.watchPosition(pos=>{
+                    navigator.geolocation.getCurrentPosition(pos=>{
                         showDriverPos(pos);
                         loc={lat:pos.coords.latitude,lng:pos.coords.longitude};
                     },()=>{},{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
@@ -1673,7 +1672,7 @@
         _locationStarted = true;
         if (!navigator.geolocation) return;
         if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-        watchId = navigator.geolocation.watchPosition(pos => {
+        watchId = navigator.geolocation.getCurrentPosition(pos => {
             loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             /* THROTTLE: only write to Firebase every 10 seconds max */
             const now = Date.now();
@@ -3874,7 +3873,7 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then(reg=>{reg.upd
                    If the APK doesn't have it, deep-link to phone Settings. */
                 try {
                     if (navigator.geolocation) {
-                        navigator.geolocation.watchPosition(
+                        navigator.geolocation.getCurrentPosition(
                             function(pos){
                                 setStatus('permLocStatus','✅ Allowed');
                                 setToggle('permLocToggle', true);

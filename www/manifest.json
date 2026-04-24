@@ -3,7 +3,7 @@
   "short_name": "SwiftDeal",
   "id": "/index.html",
   "description": "The world's first AI-powered ride-hailing app. Book rides, send packages, and rent vehicles. Pay with cash. Drivers keep 90% \u2014 just 10% commission. Available in 180+ languages.",
-  "start_url": "https://swiftdeal-3cee9.web.app",
+  "start_url": "/index.html",
   "display": "standalone",
   "display_override": [
     "standalone",
